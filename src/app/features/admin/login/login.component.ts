@@ -134,7 +134,7 @@ import { AuthService } from '../../../core/services/auth.service';
       margin-top: 10px;
     }
     .login-btn:hover:not([disabled]) {
-      background: #2563eb;
+      background: var(--admin-accent-hover);
     }
     .login-btn:disabled {
       background: var(--admin-border-color);

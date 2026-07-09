@@ -7,6 +7,7 @@ import { LoginComponent } from './features/admin/login/login.component';
 import { DashboardComponent } from './features/admin/dashboard/dashboard.component';
 import { InventarioComponent } from './features/admin/inventario/inventario.component';
 import { VentasAdminComponent } from './features/admin/ventas-admin/ventas-admin.component';
+import { ComprasAdminComponent } from './features/admin/compras-admin/compras-admin.component';
 
 export const routes: Routes = [
   // Client (Public)
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'admin/dashboard', component: DashboardComponent, canActivate: [adminGuard] },
   { path: 'admin/inventario', component: InventarioComponent, canActivate: [adminGuard] },
   { path: 'admin/ventas', component: VentasAdminComponent, canActivate: [adminGuard] },
+  { path: 'admin/compras', component: ComprasAdminComponent, canActivate: [adminGuard] },
 
   // Fallback
   { path: '**', redirectTo: '' }

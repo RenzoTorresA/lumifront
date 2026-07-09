@@ -182,8 +182,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
           
           <div class="variant-management-layout">
             <!-- Form to add new variant -->
-            <form (submit)="addVariant()" class="add-variant-form">
-              <h4>Agregar Variante</h4>
+            <form (submit)="saveVariant()" class="add-variant-form">
+              <h4>{{ editingVariant ? 'Editar Variante' : 'Agregar Variante' }}</h4>
               <div class="form-group">
                 <label>Talla</label>
                 <input type="text" [(ngModel)]="variantForm.talla" name="vTalla" required placeholder="Ej: S, M, L, XL" />
@@ -193,14 +193,21 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                 <input type="text" [(ngModel)]="variantForm.color" name="vColor" required placeholder="Ej: Negro, Blanco" />
               </div>
               <div class="form-group">
-                <label>Stock Inicial</label>
+                <label>{{ editingVariant ? 'Stock' : 'Stock Inicial' }}</label>
                 <input type="number" [(ngModel)]="variantForm.stock" name="vStock" required min="0" />
               </div>
               <div class="form-group">
                 <label>SKU</label>
                 <input type="text" [(ngModel)]="variantForm.sku" name="vSku" required placeholder="Ej: PROD-BLK-S" />
               </div>
-              <button type="submit" class="btn-save">+ Agregar</button>
+              <div class="form-group">
+                <label>URL de Imagen (Opcional)</label>
+                <input type="text" [(ngModel)]="variantForm.imagenUrl" name="vImagenUrl" placeholder="https://ejemplo.com/imagen.jpg" />
+              </div>
+              <div class="variant-form-actions">
+                <button type="submit" class="btn-save">{{ editingVariant ? 'Actualizar' : '+ Agregar' }}</button>
+                <button *ngIf="editingVariant" type="button" (click)="cancelEditVariant()" class="btn-cancel btn-sm">Cancelar</button>
+              </div>
             </form>
 
             <!-- Variants table -->
@@ -209,6 +216,7 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
               <table class="admin-table text-xs">
                 <thead>
                   <tr>
+                    <th>Imagen</th>
                     <th>SKU</th>
                     <th>Talla</th>
                     <th>Color</th>
@@ -218,16 +226,21 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                 </thead>
                 <tbody>
                   <tr *ngIf="variantes.length === 0">
-                    <td colspan="5" class="empty-row">No hay variantes creadas para este producto.</td>
+                    <td colspan="6" class="empty-row">No hay variantes creadas para este producto.</td>
                   </tr>
                   <tr *ngFor="let v of variantes">
+                    <td>
+                      <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" alt="Mini" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" />
+                      <span *ngIf="!v.imagenUrl" style="color: #6b7280;">-</span>
+                    </td>
                     <td>{{ v.sku }}</td>
                     <td><strong>{{ v.talla }}</strong></td>
                     <td>{{ v.color }}</td>
                     <td>
                       <input type="number" [(ngModel)]="v.stock" (change)="updateVariantStock(v)" class="stock-input" min="0" />
                     </td>
-                    <td>
+                    <td class="action-cells">
+                      <button (click)="editVariant(v)" class="btn-edit btn-sm">Editar</button>
                       <button (click)="deleteVariant(v.id!)" class="btn-delete btn-sm">Eliminar</button>
                     </td>
                   </tr>
@@ -313,7 +326,7 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
       transition: var(--transition-fast);
     }
     .action-btn:hover {
-      background: #2563eb;
+      background: var(--admin-accent-hover);
     }
     .table-wrapper {
       background: var(--admin-bg-surface);
@@ -340,7 +353,7 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
       letter-spacing: 0.05em;
     }
     .admin-table tr:hover {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(0, 0, 0, 0.02);
     }
     .thumb {
       width: 48px;
@@ -499,7 +512,7 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
       color: white;
     }
     .btn-save:hover {
-      background: #2563eb;
+      background: var(--admin-accent-hover);
     }
 
     /* Variant layouts */
@@ -517,6 +530,11 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
       display: flex;
       flex-direction: column;
       gap: 16px;
+    }
+    .variant-form-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
     .add-variant-form h4, .variants-table-wrapper h4 {
       font-size: 15px;
@@ -580,11 +598,12 @@ export class InventarioComponent implements OnInit {
   // Forms
   categoryForm = { id: undefined as any, nombre: '', descripcion: '', estado: true };
   productForm = { id: undefined as any, categoriaId: 0, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
-  variantForm = { talla: '', color: '', stock: 0, sku: '' };
+  variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
 
   editingCategory: Categoria | null = null;
   editingProduct: Producto | null = null;
   selectedProductForVariants: Producto | null = null;
+  editingVariant: VarianteProducto | null = null;
 
   constructor(private productoService: ProductoService, private cdr: ChangeDetectorRef) {}
 
@@ -722,7 +741,8 @@ export class InventarioComponent implements OnInit {
   // Variants Modal
   openVariantsModal(prod: Producto): void {
     this.selectedProductForVariants = prod;
-    this.variantForm = { talla: '', color: '', stock: 0, sku: '' };
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+    this.editingVariant = null;
     this.loadVariantsForSelectedProduct();
     this.showVariantsModal = true;
   }
@@ -740,26 +760,68 @@ export class InventarioComponent implements OnInit {
 
   closeVariantsModal(): void {
     this.showVariantsModal = false;
+    this.editingVariant = null;
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
   }
 
-  addVariant(): void {
-    if (!this.selectedProductForVariants?.id) return;
-    const newVariant: VarianteProducto = {
-      productoId: this.selectedProductForVariants.id,
-      talla: this.variantForm.talla,
-      color: this.variantForm.color,
-      stock: this.variantForm.stock,
-      sku: this.variantForm.sku
+  editVariant(v: VarianteProducto): void {
+    this.editingVariant = v;
+    this.variantForm = {
+      talla: v.talla,
+      color: v.color,
+      stock: v.stock,
+      sku: v.sku,
+      imagenUrl: v.imagenUrl || ''
     };
+    this.cdr.markForCheck();
+  }
 
-    this.productoService.createVariante(newVariant).subscribe({
-      next: () => {
-        this.variantForm = { talla: '', color: '', stock: 0, sku: '' };
-        this.loadVariantsForSelectedProduct();
-        this.cdr.markForCheck();
-      },
-      error: (err) => console.error('Error al agregar variante', err)
-    });
+  cancelEditVariant(): void {
+    this.editingVariant = null;
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+    this.cdr.markForCheck();
+  }
+
+  saveVariant(): void {
+    if (!this.selectedProductForVariants?.id) return;
+
+    if (this.editingVariant) {
+      const updatedVariant: VarianteProducto = {
+        ...this.editingVariant,
+        talla: this.variantForm.talla,
+        color: this.variantForm.color,
+        stock: this.variantForm.stock,
+        sku: this.variantForm.sku,
+        imagenUrl: this.variantForm.imagenUrl || undefined
+      };
+
+      this.productoService.updateVariante(updatedVariant).subscribe({
+        next: () => {
+          this.cancelEditVariant();
+          this.loadVariantsForSelectedProduct();
+          this.cdr.markForCheck();
+        },
+        error: (err) => console.error('Error al actualizar variante', err)
+      });
+    } else {
+      const newVariant: VarianteProducto = {
+        productoId: this.selectedProductForVariants.id,
+        talla: this.variantForm.talla,
+        color: this.variantForm.color,
+        stock: this.variantForm.stock,
+        sku: this.variantForm.sku,
+        imagenUrl: this.variantForm.imagenUrl || undefined
+      };
+
+      this.productoService.createVariante(newVariant).subscribe({
+        next: () => {
+          this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+          this.loadVariantsForSelectedProduct();
+          this.cdr.markForCheck();
+        },
+        error: (err) => console.error('Error al agregar variante', err)
+      });
+    }
   }
 
   updateVariantStock(variant: VarianteProducto): void {

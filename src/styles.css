@@ -19,13 +19,14 @@
   --text-muted: #a39f96;
   --border-color: #e5e2da;
 
-  /* Admin Dashboard Color Palette (Sleek Dark Mode) */
-  --admin-bg-base: #0b0f19;
-  --admin-bg-surface: #151f32;
-  --admin-border-color: #223554;
-  --admin-text-primary: #f3f4f6;
-  --admin-text-secondary: #9ca3af;
-  --admin-accent: #3b82f6;
+  /* Admin Dashboard Color Palette (Warm Light Mode) */
+  --admin-bg-base: #fcfbfa;
+  --admin-bg-surface: #ffffff;
+  --admin-border-color: #e5e2da;
+  --admin-text-primary: #1c1a17;
+  --admin-text-secondary: #6e6b64;
+  --admin-accent: #111111;
+  --admin-accent-hover: #2d2d2d;
 
   /* Shadow Presets */
   --shadow-sm: 0 2px 8px rgba(28, 26, 23, 0.04);

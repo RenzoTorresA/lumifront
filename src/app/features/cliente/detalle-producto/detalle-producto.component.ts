@@ -22,7 +22,7 @@ import { CarritoService } from '../../../core/services/carrito.service';
         <!-- Media Showcase -->
         <section class="media-section">
           <div class="img-wrapper">
-            <img [src]="producto.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'" [alt]="producto.nombre" />
+            <img [src]="getActiveProductImage()" [alt]="producto.nombre" />
           </div>
         </section>
 
@@ -432,6 +432,16 @@ export class DetalleProductoComponent implements OnInit {
     this.selectedVariant = null;
     this.selectedSize = null;
     this.cantidad = 1;
+  }
+
+  getActiveProductImage(): string {
+    if (this.selectedColor) {
+      const variantWithImage = this.variantes.find(v => v.color === this.selectedColor && v.imagenUrl);
+      if (variantWithImage && variantWithImage.imagenUrl) {
+        return variantWithImage.imagenUrl;
+      }
+    }
+    return this.producto?.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
   }
 
   isSizeAvailableForSelectedColor(size: string): boolean {

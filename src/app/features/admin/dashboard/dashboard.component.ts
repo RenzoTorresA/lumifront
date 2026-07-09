@@ -189,7 +189,7 @@ import { VentaService, Venta, DashboardResponse } from '../../../core/services/v
       letter-spacing: 0.05em;
     }
     .admin-table tr:hover {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(0, 0, 0, 0.02);
     }
     .empty-row {
       text-align: center;

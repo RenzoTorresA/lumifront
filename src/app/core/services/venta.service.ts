@@ -10,6 +10,21 @@ export interface CheckoutRequest {
   direccionReferencia: string;
 }
 
+export interface AdminCheckoutItem {
+  varianteId: number;
+  cantidad: number;
+  precioUnitario: number;
+}
+
+export interface AdminCheckoutRequest {
+  clienteNombre: string;
+  clienteTelefono: string;
+  ubigeoId: string;
+  direccionReferencia: string;
+  estado: string;
+  items: AdminCheckoutItem[];
+}
+
 export interface Venta {
   id?: number;
   fecha: string;
@@ -21,6 +36,16 @@ export interface Venta {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+}
+
+export interface VentaDetalleDTO {
+  varianteId: number;
+  cantidad: number;
+  precioUnitario: number;
+  productoNombre: string;
+  sku: string;
+  talla: string;
+  color: string;
 }
 
 export interface DashboardResponse {
@@ -48,8 +73,16 @@ export class VentaService {
     return this.http.get<Venta[]>(`${this.adminUrl}/ventas`);
   }
 
+  registrarVentaAdmin(request: AdminCheckoutRequest): Observable<Venta> {
+    return this.http.post<Venta>(`${this.adminUrl}/ventas`, request);
+  }
+
   getVentaById(id: number): Observable<Venta> {
     return this.http.get<Venta>(`${this.adminUrl}/ventas/${id}`);
+  }
+
+  getVentaDetalles(id: number): Observable<VentaDetalleDTO[]> {
+    return this.http.get<VentaDetalleDTO[]>(`${this.adminUrl}/ventas/${id}/detalles`);
   }
 
   updateVentaStatus(id: number, estado: string): Observable<Venta> {

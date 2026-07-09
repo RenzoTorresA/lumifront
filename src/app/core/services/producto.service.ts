@@ -27,6 +27,7 @@ export interface VarianteProducto {
   color: string;
   stock: number;
   sku: string;
+  imagenUrl?: string;
 }
 
 @Injectable({

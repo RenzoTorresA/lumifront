@@ -27,14 +27,30 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
               <input type="tel" id="telefono" name="telefono" [(ngModel)]="model.clienteTelefono" required placeholder="Ej: 987654321" />
             </div>
 
-            <div class="form-group">
-              <label for="ubigeo">Departamento / Provincia / Distrito</label>
-              <select id="ubigeo" name="ubigeo" [(ngModel)]="model.ubigeoId" (change)="onUbigeoChange()" required>
-                <option value="" disabled selected>Selecciona tu ubicación</option>
-                <option *ngFor="let u of ubigeos" [value]="u.id">
-                  {{ u.nombre }} (Envío: S/ {{ u.precioDelivery | number:'1.2-2' }})
-                </option>
-              </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+              <div class="form-group">
+                <label for="dpto">Departamento</label>
+                <select id="dpto" name="dpto" [(ngModel)]="selectedDpto" (change)="onDptoChange()" required>
+                  <option value="" disabled selected>Departamento</option>
+                  <option *ngFor="let d of departamentos" [value]="d.coddpto">{{ d.nombre }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="prov">Provincia</label>
+                <select id="prov" name="prov" [(ngModel)]="selectedProv" (change)="onProvChange()" [disabled]="!selectedDpto" required>
+                  <option value="" disabled selected>Provincia</option>
+                  <option *ngFor="let p of provincias" [value]="p.codprov">{{ p.nombre }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="dist">Distrito</label>
+                <select id="dist" name="ubigeo" [(ngModel)]="model.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" required>
+                  <option value="" disabled selected>Distrito</option>
+                  <option *ngFor="let di of distritos" [value]="di.id">
+                    {{ di.nombre }} (Envío: S/ {{ di.precioDelivery | number:'1.2-2' }})
+                  </option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group">
@@ -310,6 +326,13 @@ export class CheckoutComponent implements OnInit {
   ubigeos: Ubigeo[] = [];
   selectedDeliveryFee: number = 0;
 
+  departamentos: Ubigeo[] = [];
+  provincias: Ubigeo[] = [];
+  distritos: Ubigeo[] = [];
+
+  selectedDpto: string = '';
+  selectedProv: string = '';
+
   model: CheckoutRequest = {
     clienteNombre: '',
     clienteTelefono: '',
@@ -348,15 +371,33 @@ export class CheckoutComponent implements OnInit {
     this.ubigeoService.getAllUbigeos().subscribe({
       next: (data) => {
         this.ubigeos = data;
+        this.departamentos = data.filter(u => u.codprov === '00' && u.coddist === '00');
         this.cdr.markForCheck();
       },
       error: (err) => console.error('Error al cargar ubigeos', err)
     });
   }
 
-  onUbigeoChange(): void {
-    const selected = this.ubigeos.find(u => u.id === this.model.ubigeoId);
+  onDptoChange(): void {
+    this.selectedProv = '';
+    this.model.ubigeoId = '';
+    this.provincias = this.ubigeos.filter(u => u.coddpto === this.selectedDpto && u.codprov !== '00' && u.coddist === '00');
+    this.distritos = [];
+    this.selectedDeliveryFee = 0;
+    this.cdr.markForCheck();
+  }
+
+  onProvChange(): void {
+    this.model.ubigeoId = '';
+    this.distritos = this.ubigeos.filter(u => u.coddpto === this.selectedDpto && u.codprov === this.selectedProv && u.coddist !== '00');
+    this.selectedDeliveryFee = 0;
+    this.cdr.markForCheck();
+  }
+
+  onDistChange(): void {
+    const selected = this.distritos.find(u => u.id === this.model.ubigeoId);
     this.selectedDeliveryFee = selected ? selected.precioDelivery : 0;
+    this.cdr.markForCheck();
   }
 
   onSubmit(): void {
