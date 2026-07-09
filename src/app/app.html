@@ -1,0 +1,13 @@
+<div class="app-container">
+  <!-- Public Layout Header -->
+  <app-header *ngIf="!isAdminRoute" (openCart)="cartOpen = true"></app-header>
+  
+  <!-- Main Routing View -->
+  <router-outlet></router-outlet>
+  
+  <!-- Public Layout Footer -->
+  <app-footer *ngIf="!isAdminRoute"></app-footer>
+  
+  <!-- Shopping Cart Slide-out Drawer -->
+  <app-carrito [isOpen]="cartOpen" (closeCart)="cartOpen = false"></app-carrito>
+</div>

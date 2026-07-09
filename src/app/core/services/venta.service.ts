@@ -1,0 +1,64 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
+
+export interface CheckoutRequest {
+  clienteNombre: string;
+  clienteTelefono: string;
+  ubigeoId: string;
+  direccionReferencia: string;
+}
+
+export interface Venta {
+  id?: number;
+  fecha: string;
+  totalProductos: number;
+  costoDelivery: number;
+  totalPagar: number;
+  estado: string;
+  clienteNombre: string;
+  clienteTelefono: string;
+  ubigeoId: string;
+  direccionReferencia: string;
+}
+
+export interface DashboardResponse {
+  totalSales: number;
+  totalRevenue: number;
+  totalClients: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class VentaService {
+  private publicUrl = `${environment.apiUrl}/public/checkout`;
+  private adminUrl = `${environment.apiUrl}/admin`;
+
+  constructor(private http: HttpClient) {}
+
+  // Checkout (Public)
+  checkout(sesionId: string, request: CheckoutRequest): Observable<Venta> {
+    return this.http.post<Venta>(`${this.publicUrl}/${sesionId}`, request);
+  }
+
+  // Admin Sales
+  getAllVentas(): Observable<Venta[]> {
+    return this.http.get<Venta[]>(`${this.adminUrl}/ventas`);
+  }
+
+  getVentaById(id: number): Observable<Venta> {
+    return this.http.get<Venta>(`${this.adminUrl}/ventas/${id}`);
+  }
+
+  updateVentaStatus(id: number, estado: string): Observable<Venta> {
+    let params = new HttpParams().set('estado', estado);
+    return this.http.patch<Venta>(`${this.adminUrl}/ventas/${id}/estado`, {}, { params });
+  }
+
+  // Admin Dashboard
+  getDashboardStats(): Observable<DashboardResponse> {
+    return this.http.get<DashboardResponse>(`${this.adminUrl}/dashboard`);
+  }
+}
