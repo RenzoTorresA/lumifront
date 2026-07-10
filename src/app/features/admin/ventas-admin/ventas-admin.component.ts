@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { VentaService, Venta, AdminCheckoutRequest } from '../../../core/services/venta.service';
+import { VentaService, Venta, AdminCheckoutRequest, VentaFilters } from '../../../core/services/venta.service';
 import { ProductoService, Producto, VarianteProducto } from '../../../core/services/producto.service';
 import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
 
@@ -28,25 +28,60 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
         </div>
 
         <div *ngIf="!loading" class="sales-content">
-          <!-- Filters -->
-          <div class="filters-bar">
-            <div class="filter-group">
-              <label>Estado</label>
-              <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-                <option value="todos">Todos los pedidos</option>
-                <option value="pendiente">Pendientes</option>
-                <option value="enviado">Enviados</option>
-                <option value="completado">Completados</option>
-                <option value="cancelado">Cancelados</option>
-              </select>
-            </div>
-            <div class="search-box">
-              <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Buscar por cliente o teléfono..." class="filter-input" />
-            </div>
+          <div class="view-tabs">
+            <button
+              type="button"
+              class="view-tab"
+              [class.active]="activeTab === 'kanban'"
+              (click)="setActiveTab('kanban')">
+              Kanban
+            </button>
+            <button
+              type="button"
+              class="view-tab"
+              [class.active]="activeTab === 'tabla'"
+              (click)="setActiveTab('tabla')">
+              Todas las ventas
+            </button>
           </div>
 
-          <!-- Kanban Board -->
-          <div class="kanban-board">
+          <ng-container *ngIf="activeTab === 'kanban'; else salesTableView">
+            <!-- Filters -->
+            <div class="filters-bar">
+              <div class="filter-group">
+                <label>Estado</label>
+                <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+                  <option value="todos">Todos los pedidos</option>
+                  <option value="pendiente">Pendientes</option>
+                  <option value="enviado">Enviados</option>
+                  <option value="completado">Completados</option>
+                  <option value="cancelado">Cancelados</option>
+                </select>
+              </div>
+              <div class="search-box">
+                <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Buscar por cliente o teléfono..." class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Creado desde</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Creado hasta</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Envío desde</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Envío hasta</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <button type="button" class="btn-secondary" (click)="clearServerFilters()">Limpiar fechas</button>
+            </div>
+
+            <!-- Kanban Board -->
+            <div class="kanban-board">
             <!-- Column: Pendiente -->
             <div class="kanban-column">
               <div class="column-header">
@@ -59,7 +94,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('pendiente')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">#LUMI-{{ v.id }}</span>
+                    <span class="card-code">{{ getDisplayCode(v) }}</span>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -79,6 +114,10 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                     <div class="client-info-item">
                       <span class="label">Dirección:</span>
                       <span class="value">{{ v.direccionReferencia }}</span>
+                    </div>
+                    <div class="client-info-item">
+                      <span class="label">Envío programado:</span>
+                      <span class="value">{{ v.fechaEnvioProgramada ? (v.fechaEnvioProgramada | date:'dd/MM/yyyy') : 'Sin programar' }}</span>
                     </div>
                     <div class="price-summary">
                       <div class="total-to-pay">S/ {{ v.totalPagar | number:'1.2-2' }}</div>
@@ -139,7 +178,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('completado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">#LUMI-{{ v.id }}</span>
+                    <span class="card-code">{{ getDisplayCode(v) }}</span>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -159,6 +198,10 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                     <div class="client-info-item">
                       <span class="label">Dirección:</span>
                       <span class="value">{{ v.direccionReferencia }}</span>
+                    </div>
+                    <div class="client-info-item">
+                      <span class="label">Envío programado:</span>
+                      <span class="value">{{ v.fechaEnvioProgramada ? (v.fechaEnvioProgramada | date:'dd/MM/yyyy') : 'Sin programar' }}</span>
                     </div>
                     <div class="price-summary">
                       <div class="total-to-pay">S/ {{ v.totalPagar | number:'1.2-2' }}</div>
@@ -219,7 +262,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('enviado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">#LUMI-{{ v.id }}</span>
+                    <span class="card-code">{{ getDisplayCode(v) }}</span>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -239,6 +282,10 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                     <div class="client-info-item">
                       <span class="label">Dirección:</span>
                       <span class="value">{{ v.direccionReferencia }}</span>
+                    </div>
+                    <div class="client-info-item">
+                      <span class="label">Envío programado:</span>
+                      <span class="value">{{ v.fechaEnvioProgramada ? (v.fechaEnvioProgramada | date:'dd/MM/yyyy') : 'Sin programar' }}</span>
                     </div>
                     <div class="price-summary">
                       <div class="total-to-pay">S/ {{ v.totalPagar | number:'1.2-2' }}</div>
@@ -299,7 +346,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('entregado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">#LUMI-{{ v.id }}</span>
+                    <span class="card-code">{{ getDisplayCode(v) }}</span>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -319,6 +366,10 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                     <div class="client-info-item">
                       <span class="label">Dirección:</span>
                       <span class="value">{{ v.direccionReferencia }}</span>
+                    </div>
+                    <div class="client-info-item">
+                      <span class="label">Envío programado:</span>
+                      <span class="value">{{ v.fechaEnvioProgramada ? (v.fechaEnvioProgramada | date:'dd/MM/yyyy') : 'Sin programar' }}</span>
                     </div>
                     <div class="price-summary">
                       <div class="total-to-pay">S/ {{ v.totalPagar | number:'1.2-2' }}</div>
@@ -366,7 +417,71 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </ng-container>
+
+          <ng-template #salesTableView>
+            <div class="table-toolbar">
+              <div class="search-box table-search-box">
+                <input
+                  type="text"
+                  [(ngModel)]="tableSearchQuery"
+                  (input)="applyTableFilter()"
+                  placeholder="Buscar por nombre del cliente..."
+                  class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Creado desde</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Creado hasta</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Envío desde</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+              <div class="filter-group">
+                <label>Envío hasta</label>
+                <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
+              </div>
+            </div>
+
+            <div class="table-card">
+              <div class="table-scroll">
+                <table class="sales-table">
+                  <thead>
+                    <tr>
+                      <th>Pedido</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Celular</th>
+                      <th>Ubicación</th>
+                      <th>Total</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngIf="tableVentas.length === 0">
+                      <td colspan="7" class="empty-row">No se encontraron ventas para ese cliente</td>
+                    </tr>
+                    <tr *ngFor="let v of tableVentas">
+                      <td class="sales-table-code">{{ getDisplayCode(v) }}</td>
+                      <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                      <td>{{ v.clienteNombre }}</td>
+                      <td>{{ v.clienteTelefono }}</td>
+                      <td>{{ getUbigeoName(v.ubigeoId) }}</td>
+                      <td>S/ {{ v.totalPagar | number:'1.2-2' }}</td>
+                      <td>
+                        <span class="table-status-pill" [ngClass]="v.estado">{{ v.estado }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </ng-template>
         </div>
 
         <!-- ================= MODAL: REGISTRAR VENTA MANUAL ================= -->
@@ -415,6 +530,10 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                   <div class="form-group">
                     <label>Dirección y Referencia</label>
                     <textarea [(ngModel)]="saleForm.direccionReferencia" name="mDireccion" required rows="2" placeholder="Ej: Av. Larco 123 Dpto 401" class="filter-input w-full textarea-field"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>Fecha de envío programada</label>
+                    <input type="date" [(ngModel)]="saleForm.fechaEnvioProgramada" name="mFechaEnvioProgramada" class="filter-input w-full" />
                   </div>
                   <div class="form-group">
                     <label>Estado Inicial del Pedido</label>
@@ -550,10 +669,48 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
       margin-bottom: 24px;
       gap: 20px;
     }
+    .view-tabs {
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid var(--admin-border-color);
+      border-radius: 999px;
+      backdrop-filter: blur(14px);
+    }
+    .view-tab {
+      border: none;
+      background: transparent;
+      color: var(--admin-text-secondary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+    .view-tab.active {
+      background: var(--admin-accent);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    }
+    .view-tab:hover:not(.active) {
+      background: rgba(15, 23, 42, 0.06);
+      color: var(--admin-text-primary);
+    }
     @media (max-width: 768px) {
       .filters-bar {
         flex-direction: column;
         align-items: stretch;
+      }
+      .view-tabs {
+        display: flex;
+        width: 100%;
+      }
+      .view-tab {
+        flex: 1;
       }
     }
     .filter-group {
@@ -863,6 +1020,87 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
       color: var(--admin-text-secondary);
       padding: 32px !important;
     }
+    .table-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    .table-search-box {
+      width: min(100%, 420px);
+    }
+    .table-card {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--admin-border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .table-scroll {
+      overflow-x: auto;
+    }
+    .sales-table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+    }
+    .sales-table th,
+    .sales-table td {
+      padding: 16px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--admin-border-color);
+      font-size: 14px;
+    }
+    .sales-table th {
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--admin-text-secondary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .sales-table tbody tr:hover {
+      background: rgba(15, 23, 42, 0.03);
+    }
+    .sales-table-code {
+      font-weight: 800;
+      color: var(--admin-text-primary);
+    }
+    .table-status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+      border: 1px solid transparent;
+    }
+    .table-status-pill.pendiente {
+      background: rgba(245, 158, 11, 0.12);
+      color: #b45309;
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+    .table-status-pill.completado {
+      background: rgba(16, 185, 129, 0.12);
+      color: #047857;
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+    .table-status-pill.enviado {
+      background: rgba(59, 130, 246, 0.12);
+      color: #1d4ed8;
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+    .table-status-pill.entregado {
+      background: rgba(139, 92, 246, 0.12);
+      color: #6d28d9;
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+    .table-status-pill.cancelado {
+      background: rgba(239, 68, 68, 0.12);
+      color: #b91c1c;
+      border-color: rgba(239, 68, 68, 0.2);
+    }
     .loader-container {
       display: flex;
       justify-content: center;
@@ -1105,10 +1343,19 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
 export class VentasAdminComponent implements OnInit {
   ventas: Venta[] = [];
   filteredVentas: Venta[] = [];
+  tableVentas: Venta[] = [];
   loading = true;
 
+  activeTab: 'kanban' | 'tabla' = 'kanban';
   statusFilter: string = 'todos';
   searchQuery: string = '';
+  tableSearchQuery: string = '';
+  serverFilters = {
+    fechaCreacionDesde: '',
+    fechaCreacionHasta: '',
+    fechaEnvioDesde: '',
+    fechaEnvioHasta: ''
+  };
 
   // Manual sale state
   showCreateSaleModal = false;
@@ -1133,6 +1380,7 @@ export class VentasAdminComponent implements OnInit {
     clienteTelefono: '',
     ubigeoId: '',
     direccionReferencia: '',
+    fechaEnvioProgramada: '',
     estado: 'pendiente'
   };
   
@@ -1188,7 +1436,7 @@ export class VentasAdminComponent implements OnInit {
 
   loadVentas(): void {
     this.loading = true;
-    this.ventaService.getAllVentas().subscribe({
+    this.ventaService.getAllVentas(this.getVentaFilters()).subscribe({
       next: (data) => {
         this.ventas = data.sort((a, b) => (b.id || 0) - (a.id || 0));
         this.applyFilters();
@@ -1201,6 +1449,29 @@ export class VentasAdminComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  onServerFiltersChange(): void {
+    this.loadVentas();
+  }
+
+  clearServerFilters(): void {
+    this.serverFilters = {
+      fechaCreacionDesde: '',
+      fechaCreacionHasta: '',
+      fechaEnvioDesde: '',
+      fechaEnvioHasta: ''
+    };
+    this.loadVentas();
+  }
+
+  getVentaFilters(): VentaFilters {
+    return {
+      fechaCreacionDesde: this.serverFilters.fechaCreacionDesde || undefined,
+      fechaCreacionHasta: this.serverFilters.fechaCreacionHasta || undefined,
+      fechaEnvioDesde: this.serverFilters.fechaEnvioDesde || undefined,
+      fechaEnvioHasta: this.serverFilters.fechaEnvioHasta || undefined
+    };
   }
 
   getUbigeoName(ubigeoId: string): string {
@@ -1223,6 +1494,11 @@ export class VentasAdminComponent implements OnInit {
 
   getVentasByStatus(status: string): Venta[] {
     return this.filteredVentas.filter(v => v.estado === status);
+  }
+
+  setActiveTab(tab: 'kanban' | 'tabla'): void {
+    this.activeTab = tab;
+    this.cdr.markForCheck();
   }
 
   toggleSaleExpand(id: number): void {
@@ -1258,6 +1534,14 @@ export class VentasAdminComponent implements OnInit {
         v.clienteTelefono.includes(query);
       return matchStatus && matchSearch;
     });
+    this.applyTableFilter();
+  }
+
+  applyTableFilter(): void {
+    const query = this.tableSearchQuery.toLowerCase().trim();
+    this.tableVentas = this.ventas.filter(v =>
+      !query || v.clienteNombre.toLowerCase().includes(query)
+    );
   }
 
   updateStatus(id: number, newStatus: string): void {
@@ -1279,12 +1563,43 @@ export class VentasAdminComponent implements OnInit {
     });
   }
 
+  updateFechaEnvioProgramada(id: number, dateValue: string): void {
+    this.ventaService.updateFechaEnvioProgramada(id, this.toDateTimeString(dateValue)).subscribe({
+      next: (updated) => {
+        const idx = this.ventas.findIndex(v => v.id === id);
+        if (idx !== -1) {
+          this.ventas[idx] = updated;
+          this.applyFilters();
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al actualizar fecha de envío programada', err);
+        alert(err.error?.message || 'Error al actualizar la fecha de envío programada');
+        this.loadVentas();
+      }
+    });
+  }
+
+  getDateInputValue(dateTime?: string | null): string {
+    return dateTime ? dateTime.slice(0, 10) : '';
+  }
+
+  getDisplayCode(venta: Venta): string {
+    return `#LUMI-${venta.numeroComprobante ?? venta.id ?? ''}`;
+  }
+
+  toDateTimeString(dateValue: string): string | null {
+    return dateValue ? `${dateValue}T00:00:00` : null;
+  }
+
   openCreateSaleModal(): void {
     this.saleForm = {
       clienteNombre: '',
       clienteTelefono: '',
       ubigeoId: '',
       direccionReferencia: '',
+      fechaEnvioProgramada: '',
       estado: 'pendiente'
     };
     this.saleItems = [];
@@ -1423,11 +1738,12 @@ export class VentasAdminComponent implements OnInit {
     
     this.submittingSale = true;
     
-    const request = {
+    const request: AdminCheckoutRequest = {
       clienteNombre: this.saleForm.clienteNombre,
       clienteTelefono: this.saleForm.clienteTelefono,
       ubigeoId: this.saleForm.ubigeoId,
       direccionReferencia: this.saleForm.direccionReferencia,
+      fechaEnvioProgramada: this.toDateTimeString(this.saleForm.fechaEnvioProgramada),
       estado: this.saleForm.estado,
       items: this.saleItems.map(item => ({
         varianteId: item.variante.id!,
@@ -1440,7 +1756,7 @@ export class VentasAdminComponent implements OnInit {
       next: (venta) => {
         this.submittingSale = false;
         this.showCreateSaleModal = false;
-        alert(`Pedido #LUMI-${venta.id} registrado con éxito.`);
+        alert(`${this.getDisplayCode(venta)} registrado con éxito.`);
         this.loadVentas();
         this.cdr.markForCheck();
       },

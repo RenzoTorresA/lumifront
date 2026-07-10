@@ -104,7 +104,7 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
           <p class="order-msg">Tu pedido ha sido registrado con éxito. Nos pondremos en contacto contigo pronto.</p>
           
           <div class="order-details">
-            <p><strong>Código de Pedido:</strong> #LUMI-{{ successOrder.id }}</p>
+            <p><strong>Código de Pedido:</strong> #LUMI-{{ successOrder.numeroComprobante || successOrder.id }}</p>
             <p><strong>Cliente:</strong> {{ successOrder.clienteNombre }}</p>
             <p><strong>Total Pagado:</strong> S/ {{ successOrder.totalPagar | number:'1.2-2' }}</p>
             <p><strong>Destino:</strong> {{ successOrder.direccionReferencia }}</p>
