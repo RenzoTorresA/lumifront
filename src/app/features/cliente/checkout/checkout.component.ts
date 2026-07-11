@@ -17,6 +17,42 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
         <section class="form-section">
           <h2>Datos de Entrega</h2>
           <form (submit)="onSubmit()" class="checkout-form">
+            
+            <!-- Shipping Methods Toggle -->
+            <div class="shipping-method-selector">
+              <button type="button" 
+                [class.active]="model.metodoEnvio === 'DELIVERY_LOCAL'"
+                (click)="changeShippingMethod('DELIVERY_LOCAL')"
+                class="method-btn">
+                📍 Delivery Pucallpa
+              </button>
+              <button type="button" 
+                [class.active]="model.metodoEnvio === 'RECOJO_TIENDA'"
+                (click)="changeShippingMethod('RECOJO_TIENDA')"
+                class="method-btn">
+                🏪 Recojo en Tienda
+              </button>
+              <button type="button" 
+                [class.active]="model.metodoEnvio === 'ENVIO_PROVINCIA'"
+                (click)="changeShippingMethod('ENVIO_PROVINCIA')"
+                class="method-btn">
+                🚚 Envío a Provincias
+              </button>
+            </div>
+
+            <!-- Helper Note according to selection -->
+            <div class="shipping-note animate-pop" *ngIf="model.metodoEnvio">
+              <span *ngIf="model.metodoEnvio === 'DELIVERY_LOCAL'" class="note-text info">
+                💡 <strong>Zona céntrica delivery gratis</strong>. Otras zonas como Manantay o Yarinacocha tienen costo adicional dependiendo del lugar (coordinación posterior).
+              </span>
+              <span *ngIf="model.metodoEnvio === 'RECOJO_TIENDA'" class="note-text success">
+                🏪 <strong>Retiro en tienda física</strong>. Costo de envío gratis. Puedes pasar a recoger tu pedido en nuestro local.
+              </span>
+              <span *ngIf="model.metodoEnvio === 'ENVIO_PROVINCIA'" class="note-text warning">
+                📦 <strong>Envío nacional por Shalom</strong>. El costo final del envío varía según el destino y se cancela en la agencia al recoger tu producto.
+              </span>
+            </div>
+
             <div class="form-group">
               <label for="nombre">Nombre Completo</label>
               <input type="text" id="nombre" name="nombre" [(ngModel)]="model.clienteNombre" required placeholder="Ingresa tu nombre y apellido" />
@@ -27,7 +63,7 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
               <input type="tel" id="telefono" name="telefono" [(ngModel)]="model.clienteTelefono" required placeholder="Ej: 987654321" />
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div *ngIf="model.metodoEnvio === 'ENVIO_PROVINCIA'" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;" class="animate-pop">
               <div class="form-group">
                 <label for="dpto">Departamento</label>
                 <select id="dpto" name="dpto" [(ngModel)]="selectedDpto" (change)="onDptoChange()" required>
@@ -47,13 +83,13 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
                 <select id="dist" name="ubigeo" [(ngModel)]="model.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" required>
                   <option value="" disabled selected>Distrito</option>
                   <option *ngFor="let di of distritos" [value]="di.id">
-                    {{ di.nombre }} (Envío: S/ {{ di.precioDelivery | number:'1.2-2' }})
+                    {{ di.nombre }}
                   </option>
                 </select>
               </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" *ngIf="model.metodoEnvio !== 'RECOJO_TIENDA'">
               <label for="direccion">Dirección y Referencia</label>
               <textarea id="direccion" name="direccion" [(ngModel)]="model.direccionReferencia" required rows="3" placeholder="Ej: Av. Larco 123 Dpto 401 (Frente al parque)"></textarea>
             </div>
@@ -104,7 +140,7 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
           <p class="order-msg">Tu pedido ha sido registrado con éxito. Nos pondremos en contacto contigo pronto.</p>
           
           <div class="order-details">
-            <p><strong>Código de Pedido:</strong> #LUMI-{{ successOrder.id }}</p>
+            <p><strong>Código de Pedido:</strong> #LUMI-{{ successOrder.numeroComprobante || successOrder.id }}</p>
             <p><strong>Cliente:</strong> {{ successOrder.clienteNombre }}</p>
             <p><strong>Total Pagado:</strong> S/ {{ successOrder.totalPagar | number:'1.2-2' }}</p>
             <p><strong>Destino:</strong> {{ successOrder.direccionReferencia }}</p>
@@ -319,6 +355,54 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
     .back-home-btn:hover {
       background: var(--primary-hover);
     }
+    .shipping-method-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .method-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-align: center;
+      color: var(--text-primary);
+    }
+    .method-btn:hover {
+      border-color: var(--text-primary);
+    }
+    .method-btn.active {
+      background: var(--text-primary);
+      color: var(--bg-surface);
+      border-color: var(--text-primary);
+    }
+    .shipping-note {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .note-text {
+      font-size: 13px;
+      line-height: 1.5;
+      display: block;
+    }
+    .note-text.info {
+      color: var(--text-primary);
+    }
+    .note-text.success {
+      color: #047857;
+    }
+    .note-text.warning {
+      color: #b45309;
+    }
   `]
 })
 export class CheckoutComponent implements OnInit {
@@ -336,8 +420,9 @@ export class CheckoutComponent implements OnInit {
   model: CheckoutRequest = {
     clienteNombre: '',
     clienteTelefono: '',
-    ubigeoId: '',
-    direccionReferencia: ''
+    ubigeoId: '250101',
+    direccionReferencia: '',
+    metodoEnvio: 'DELIVERY_LOCAL'
   };
 
   submitting: boolean = false;
@@ -352,19 +437,35 @@ export class CheckoutComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const sesionId = this.carritoService.getSessionId();
-    this.loadCart(sesionId);
+    this.carritoService.cart$.subscribe(cart => {
+      this.cart = cart;
+      this.cdr.markForCheck();
+    });
+    this.carritoService.refreshCart();
     this.loadUbigeos();
+    
+    // Set default shipping values
+    this.model.metodoEnvio = 'DELIVERY_LOCAL';
+    this.model.ubigeoId = '250101';
+    this.selectedDeliveryFee = 0;
   }
 
-  loadCart(sesionId: string): void {
-    this.carritoService.getCartDetails(sesionId).subscribe({
-      next: (data) => {
-        this.cart = data;
-        this.cdr.markForCheck();
-      },
-      error: (err) => console.error('Error al cargar carrito', err)
-    });
+  changeShippingMethod(method: string): void {
+    this.model.metodoEnvio = method;
+    if (method === 'RECOJO_TIENDA') {
+      this.selectedDeliveryFee = 0;
+      this.model.ubigeoId = '';
+    } else if (method === 'DELIVERY_LOCAL') {
+      this.selectedDeliveryFee = 0;
+      this.model.ubigeoId = '250101'; // Calleria / Pucallpa
+    } else if (method === 'ENVIO_PROVINCIA') {
+      this.model.ubigeoId = '';
+      this.selectedDeliveryFee = 0;
+      this.selectedDpto = '';
+      this.selectedProv = '';
+      this.distritos = [];
+    }
+    this.cdr.markForCheck();
   }
 
   loadUbigeos(): void {

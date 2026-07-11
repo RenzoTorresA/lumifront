@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { ProductoService, Producto, Categoria, VarianteProducto } from '../../../core/services/producto.service';
+import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } from '../../../core/services/producto.service';
 
 @Component({
   selector: 'app-inventario',
@@ -52,22 +52,83 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                   <tr *ngIf="productos.length === 0">
                     <td colspan="5" class="empty-row">No hay productos creados.</td>
                   </tr>
-                  <tr *ngFor="let p of productos">
-                    <td>
-                      <img [src]="p.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&auto=format&fit=crop'" [alt]="p.nombre" class="thumb" />
-                    </td>
-                    <td>
-                      <strong>{{ p.nombre }}</strong>
-                      <div class="desc-short">{{ p.descripcion }}</div>
-                    </td>
-                    <td>{{ getCategoryName(p.categoriaId) }}</td>
-                    <td>S/ {{ p.precioBase | number:'1.2-2' }}</td>
-                    <td class="action-cells">
-                      <button (click)="openVariantsModal(p)" class="btn-secondary">Variantes (Stock)</button>
-                      <button (click)="openProductModal(p)" class="btn-edit">Editar</button>
-                      <button (click)="deleteProducto(p.id!)" class="btn-delete">Eliminar</button>
-                    </td>
-                  </tr>
+                  <ng-container *ngFor="let p of productos">
+                    <tr>
+                      <td>
+                        <img [src]="p.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&auto=format&fit=crop'" [alt]="p.nombre" class="thumb" />
+                      </td>
+                      <td>
+                        <strong>{{ p.nombre }}</strong>
+                        <div class="desc-short">{{ p.descripcion }}</div>
+                      </td>
+                      <td>
+                        <div>{{ getCategoryName(p.categoriaId) }}</div>
+                        <small *ngIf="p.subcategoriaId" class="text-xs" style="color: var(--admin-text-secondary); display: block; margin-top: 2px;">
+                          ↳ {{ getSubcategoryName(p.subcategoriaId) }}
+                        </small>
+                      </td>
+                      <td>S/ {{ p.precioBase | number:'1.2-2' }}</td>
+                      <td class="action-cells">
+                        <button (click)="toggleProductExpand(p)" class="btn-secondary">
+                          {{ expandedProducts[p.id!] ? 'Ocultar stock' : 'Ver stock' }}
+                        </button>
+                        <button (click)="openProductModal(p)" class="btn-edit">Editar</button>
+                        <button (click)="deleteProducto(p.id!)" class="btn-delete">Eliminar</button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="expandedProducts[p.id!]">
+                      <td colspan="5" class="expanded-row-td">
+                        <div class="variants-inline-container animate-fade-in">
+                          <div *ngIf="loadingVariants[p.id!]" class="loader-sm-container">
+                            <span class="loader-sm"></span>
+                          </div>
+                          
+                          <div *ngIf="!loadingVariants[p.id!] && productVariantsMap[p.id!]" class="variants-inline-content">
+                            <div class="inline-header-row">
+                              <h4>Variantes e Inventario: {{ p.nombre }}</h4>
+                              <button (click)="openVariantsModal(p)" class="btn-manage-variants">
+                                ⚙️ Gestionar Variantes
+                              </button>
+                            </div>
+                            
+                            <table class="variants-inline-table">
+                              <thead>
+                                <tr>
+                                  <th>Imagen</th>
+                                  <th>SKU</th>
+                                  <th>Talla</th>
+                                  <th>Color</th>
+                                  <th>Stock</th>
+                                  <th>Precio</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr *ngIf="productVariantsMap[p.id!].length === 0">
+                                  <td colspan="6" class="empty-inline-row">No hay variantes creadas para este producto.</td>
+                                </tr>
+                                <tr *ngFor="let v of productVariantsMap[p.id!]">
+                                  <td>
+                                    <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" [alt]="v.sku" class="variant-thumb" />
+                                    <span *ngIf="!v.imagenUrl" class="no-img-text">-</span>
+                                  </td>
+                                  <td><code class="sku-code">{{ v.sku }}</code></td>
+                                  <td><strong>{{ v.talla }}</strong></td>
+                                  <td>{{ v.color }}</td>
+                                  <td>
+                                    <span class="stock-badge">{{ v.stock }}</span>
+                                  </td>
+                                  <td>
+                                    <span *ngIf="v.precio">S/ {{ v.precio | number:'1.2-2' }}</span>
+                                    <span *ngIf="!v.precio" style="color: var(--admin-text-secondary); font-size: 11px;">(Base)</span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
                 </tbody>
               </table>
             </div>
@@ -94,19 +155,65 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                   <tr *ngIf="categorias.length === 0">
                     <td colspan="4" class="empty-row">No hay categorías creadas.</td>
                   </tr>
-                  <tr *ngFor="let c of categorias">
-                    <td><strong>{{ c.nombre }}</strong></td>
-                    <td>{{ c.descripcion || '-' }}</td>
-                    <td>
-                      <span class="status-indicator" [class.active]="c.estado">
-                        {{ c.estado ? 'Activa' : 'Inactiva' }}
-                      </span>
-                    </td>
-                    <td class="action-cells">
-                      <button (click)="openCategoryModal(c)" class="btn-edit">Editar</button>
-                      <button (click)="deleteCategoria(c.id!)" class="btn-delete">Eliminar</button>
-                    </td>
-                  </tr>
+                  <ng-container *ngFor="let c of categorias">
+                    <tr>
+                      <td><strong>{{ c.nombre }}</strong></td>
+                      <td>{{ c.descripcion || '-' }}</td>
+                      <td>
+                        <span class="status-indicator" [class.active]="c.estado">
+                          {{ c.estado ? 'Activa' : 'Inactiva' }}
+                        </span>
+                      </td>
+                      <td class="action-cells">
+                        <button (click)="toggleCategoryExpand(c)" class="btn-secondary btn-sm">
+                          {{ expandedCategories[c.id!] ? 'Ocultar subs' : 'Subcategorías' }}
+                        </button>
+                        <button (click)="openCategoryModal(c)" class="btn-edit btn-sm">Editar</button>
+                        <button (click)="deleteCategoria(c.id!)" class="btn-delete btn-sm">Eliminar</button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="expandedCategories[c.id!]">
+                      <td colspan="4" class="expanded-row-td">
+                        <div class="variants-inline-container animate-fade-in">
+                          <div class="inline-header-row">
+                            <h4>Subcategorías de {{ c.nombre }}</h4>
+                            <button (click)="openSubcategoryModal(c)" class="btn-manage-variants">
+                              + Nueva Subcategoría
+                            </button>
+                          </div>
+                          
+                          <table class="variants-inline-table">
+                            <thead>
+                              <tr>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngIf="!categorySubcategoriasMap[c.id!] || categorySubcategoriasMap[c.id!].length === 0">
+                                <td colspan="4" class="empty-inline-row">No hay subcategorías asociadas a esta categoría.</td>
+                              </tr>
+                              <tr *ngFor="let sub of categorySubcategoriasMap[c.id!]">
+                                <td><strong>{{ sub.nombre }}</strong></td>
+                                <td>{{ sub.descripcion || '-' }}</td>
+                                <td>
+                                  <span class="status-indicator" [class.active]="sub.estado">
+                                    {{ sub.estado ? 'Activa' : 'Inactiva' }}
+                                  </span>
+                                </td>
+                                <td class="action-cells">
+                                  <button (click)="openSubcategoryModal(c, sub)" class="btn-edit btn-sm">Editar</button>
+                                  <button (click)="deleteSubcategory(sub.id!, c.id!)" class="btn-delete btn-sm">Eliminar</button>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
                 </tbody>
               </table>
             </div>
@@ -139,6 +246,34 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
         </div>
       </div>
 
+      <!-- ================= MODAL: SUBCATEGORIA ================= -->
+      <div class="modal-overlay" *ngIf="showSubcategoryModal" (click)="closeSubcategoryModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h3>{{ editingSubcategory?.id ? 'Editar Subcategoría' : 'Nueva Subcategoría' }}</h3>
+          <p style="font-size: 13px; color: var(--admin-text-secondary); margin-top: -16px; margin-bottom: 20px;">
+            Asociada a la categoría: <strong>{{ selectedCategoryForSubcategory?.nombre }}</strong>
+          </p>
+          <form (submit)="saveSubcategory()" class="modal-form">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="subcategoryForm.nombre" name="subNombre" required />
+            </div>
+            <div class="form-group">
+              <label>Descripción</label>
+              <textarea [(ngModel)]="subcategoryForm.descripcion" name="subDesc" rows="3"></textarea>
+            </div>
+            <div class="form-group-row">
+              <input type="checkbox" id="subEstado" [(ngModel)]="subcategoryForm.estado" name="subEstado" />
+              <label for="subEstado">Subcategoría Activa</label>
+            </div>
+            <div class="modal-actions">
+              <button type="button" (click)="closeSubcategoryModal()" class="btn-cancel">Cancelar</button>
+              <button type="submit" class="btn-save">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- ================= MODAL: PRODUCTO ================= -->
       <div class="modal-overlay" *ngIf="showProductModal" (click)="closeProductModal()">
         <div class="modal" (click)="$event.stopPropagation()">
@@ -150,9 +285,18 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
             </div>
             <div class="form-group">
               <label>Categoría</label>
-              <select [(ngModel)]="productForm.categoriaId" name="prodCat" required>
+              <select [(ngModel)]="productForm.categoriaId" name="prodCat" required (change)="onCategoryChange()">
                 <option value="" disabled>Selecciona una categoría</option>
                 <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
+              </select>
+            </div>
+            <div class="form-group" *ngIf="productForm.categoriaId">
+              <label>Subcategoría</label>
+              <select [(ngModel)]="productForm.subcategoriaId" name="prodSubCat">
+                <option [value]="null">Ninguna</option>
+                <option *ngFor="let sub of getSubcategoriasForSelectedCategory(productForm.categoriaId)" [value]="sub.id">
+                  {{ sub.nombre }}
+                </option>
               </select>
             </div>
             <div class="form-group">
@@ -204,6 +348,10 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                 <label>URL de Imagen (Opcional)</label>
                 <input type="text" [(ngModel)]="variantForm.imagenUrl" name="vImagenUrl" placeholder="https://ejemplo.com/imagen.jpg" />
               </div>
+              <div class="form-group">
+                <label>Precio Especial (Opcional) (S/)</label>
+                <input type="number" step="0.01" [(ngModel)]="variantForm.precio" name="vPrecio" placeholder="Por defecto: Precio base" />
+              </div>
               <div class="variant-form-actions">
                 <button type="submit" class="btn-save">{{ editingVariant ? 'Actualizar' : '+ Agregar' }}</button>
                 <button *ngIf="editingVariant" type="button" (click)="cancelEditVariant()" class="btn-cancel btn-sm">Cancelar</button>
@@ -221,6 +369,7 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                     <th>Talla</th>
                     <th>Color</th>
                     <th>Stock</th>
+                    <th>Precio</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -237,7 +386,11 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
                     <td><strong>{{ v.talla }}</strong></td>
                     <td>{{ v.color }}</td>
                     <td>
-                      <input type="number" [(ngModel)]="v.stock" (change)="updateVariantStock(v)" class="stock-input" min="0" />
+                      <span class="stock-badge">{{ v.stock }}</span>
+                    </td>
+                    <td>
+                      <span *ngIf="v.precio">S/ {{ v.precio | number:'1.2-2' }}</span>
+                      <span *ngIf="!v.precio" style="color: var(--admin-text-secondary); font-size: 11px;">(Base)</span>
                     </td>
                     <td class="action-cells">
                       <button (click)="editVariant(v)" class="btn-edit btn-sm">Editar</button>
@@ -446,7 +599,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
       color: var(--admin-text-primary);
     }
     .modal-lg {
-      max-width: 900px;
+      max-width: 1000px;
+      width: 90%;
     }
     .modal h3 {
       font-size: 20px;
@@ -518,8 +672,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
     /* Variant layouts */
     .variant-management-layout {
       display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 32px;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
       align-items: start;
     }
     .add-variant-form {
@@ -543,10 +697,11 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
     }
     .variants-table-wrapper {
       flex: 1;
+      overflow-x: auto;
     }
     .text-xs th, .text-xs td {
-      padding: 8px 12px !important;
-      font-size: 13px;
+      padding: 8px 8px !important;
+      font-size: 12px;
     }
     .stock-input {
       width: 70px;
@@ -580,6 +735,113 @@ import { ProductoService, Producto, Categoria, VarianteProducto } from '../../..
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    .expanded-row-td {
+      padding: 0 !important;
+      background: rgba(148, 163, 184, 0.03);
+    }
+    .variants-inline-container {
+      padding: 20px;
+      border-bottom: 1px solid var(--admin-border-color);
+    }
+    .loader-sm-container {
+      display: flex;
+      justify-content: center;
+      padding: 12px 0;
+    }
+    .loader-sm {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--admin-border-color);
+      border-radius: 50%;
+      border-top-color: var(--admin-accent);
+      animation: spin 1s linear infinite;
+    }
+    .variants-inline-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .inline-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .inline-header-row h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+      margin: 0;
+    }
+    .btn-manage-variants {
+      background: none;
+      border: 1px dashed var(--admin-border-color);
+      color: var(--admin-text-secondary);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+    .btn-manage-variants:hover {
+      background: var(--admin-bg-base);
+      color: var(--admin-text-primary);
+      border-color: var(--admin-text-secondary);
+    }
+    .variants-inline-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .variants-inline-table th, .variants-inline-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      text-align: left;
+    }
+    .variants-inline-table th {
+      font-weight: 700;
+      color: var(--admin-text-secondary);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      background: rgba(0, 0, 0, 0.02);
+    }
+    .variants-inline-table tbody tr:hover {
+      background: rgba(0, 0, 0, 0.02) !important;
+    }
+    .variant-thumb {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--admin-border-color);
+    }
+    .no-img-text {
+      color: var(--admin-text-secondary);
+    }
+    .sku-code {
+      font-family: monospace;
+      background: rgba(0,0,0,0.04);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .empty-inline-row {
+      text-align: center;
+      color: var(--admin-text-secondary);
+      padding: 16px !important;
+    }
+    .stock-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      background: var(--admin-bg-base);
+      border: 1px solid var(--admin-border-color);
+      color: var(--admin-text-primary);
+      text-align: center;
+      min-width: 48px;
+    }
   `]
 })
 export class InventarioComponent implements OnInit {
@@ -587,20 +849,32 @@ export class InventarioComponent implements OnInit {
   loading: boolean = true;
 
   categorias: Categoria[] = [];
+  subcategorias: Subcategoria[] = [];
   productos: Producto[] = [];
   variantes: VarianteProducto[] = [];
 
+  expandedProducts: { [id: number]: boolean } = {};
+  productVariantsMap: { [productId: number]: VarianteProducto[] } = {};
+  loadingVariants: { [productId: number]: boolean } = {};
+
+  expandedCategories: { [id: number]: boolean } = {};
+  categorySubcategoriasMap: { [categoriaId: number]: Subcategoria[] } = {};
+
   // Modals visibility
   showCategoryModal = false;
+  showSubcategoryModal = false;
   showProductModal = false;
   showVariantsModal = false;
 
   // Forms
   categoryForm = { id: undefined as any, nombre: '', descripcion: '', estado: true };
-  productForm = { id: undefined as any, categoriaId: 0, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
-  variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+  subcategoryForm = { id: undefined as any, categoriaId: 0, nombre: '', descripcion: '', estado: true };
+  productForm = { id: undefined as any, categoriaId: 0, subcategoriaId: null as number | null, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
+  variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null as number | null };
 
   editingCategory: Categoria | null = null;
+  editingSubcategory: Subcategoria | null = null;
+  selectedCategoryForSubcategory: Categoria | null = null;
   editingProduct: Producto | null = null;
   selectedProductForVariants: Producto | null = null;
   editingVariant: VarianteProducto | null = null;
@@ -620,14 +894,35 @@ export class InventarioComponent implements OnInit {
     this.productoService.getAllCategorias().subscribe({
       next: (cats) => {
         this.categorias = cats;
-        this.productoService.getProductos().subscribe({
-          next: (prods) => {
-            this.productos = prods;
-            this.loading = false;
-            this.cdr.markForCheck();
+        
+        this.productoService.getAllSubcategorias().subscribe({
+          next: (subs) => {
+            this.subcategorias = subs;
+            
+            // Build the map of category subcategories for faster lookup
+            this.categorySubcategoriasMap = {};
+            this.subcategorias.forEach(s => {
+              if (!this.categorySubcategoriasMap[s.categoriaId]) {
+                this.categorySubcategoriasMap[s.categoriaId] = [];
+              }
+              this.categorySubcategoriasMap[s.categoriaId].push(s);
+            });
+
+            this.productoService.getProductos().subscribe({
+              next: (prods) => {
+                this.productos = prods;
+                this.loading = false;
+                this.cdr.markForCheck();
+              },
+              error: (err) => {
+                console.error('Error al cargar productos', err);
+                this.loading = false;
+                this.cdr.markForCheck();
+              }
+            });
           },
           error: (err) => {
-            console.error('Error al cargar productos', err);
+            console.error('Error al cargar subcategorías', err);
             this.loading = false;
             this.cdr.markForCheck();
           }
@@ -698,6 +993,7 @@ export class InventarioComponent implements OnInit {
       this.productForm = {
         id: prod.id,
         categoriaId: prod.categoriaId,
+        subcategoriaId: prod.subcategoriaId || null,
         nombre: prod.nombre,
         descripcion: prod.descripcion || '',
         precioBase: prod.precioBase,
@@ -705,7 +1001,7 @@ export class InventarioComponent implements OnInit {
       };
     } else {
       this.editingProduct = null;
-      this.productForm = { id: undefined, categoriaId: this.categorias[0]?.id || 0, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
+      this.productForm = { id: undefined, categoriaId: this.categorias[0]?.id || 0, subcategoriaId: null, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
     }
     this.showProductModal = true;
   }
@@ -741,7 +1037,7 @@ export class InventarioComponent implements OnInit {
   // Variants Modal
   openVariantsModal(prod: Producto): void {
     this.selectedProductForVariants = prod;
-    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
     this.editingVariant = null;
     this.loadVariantsForSelectedProduct();
     this.showVariantsModal = true;
@@ -752,16 +1048,52 @@ export class InventarioComponent implements OnInit {
     this.productoService.getVariantesByProductoId(this.selectedProductForVariants.id).subscribe({
       next: (vars) => {
         this.variantes = vars;
+        this.productVariantsMap[this.selectedProductForVariants!.id!] = vars;
         this.cdr.markForCheck();
       },
       error: (err) => console.error('Error al cargar variantes', err)
     });
   }
 
+  toggleProductExpand(p: Producto): void {
+    const id = p.id!;
+    this.expandedProducts[id] = !this.expandedProducts[id];
+    if (this.expandedProducts[id] && !this.productVariantsMap[id]) {
+      this.loadVariantsForProduct(id);
+    }
+    this.cdr.markForCheck();
+  }
+
+  loadVariantsForProduct(productId: number): void {
+    this.loadingVariants[productId] = true;
+    this.productoService.getVariantesByProductoId(productId).subscribe({
+      next: (vars) => {
+        this.productVariantsMap[productId] = vars;
+        this.loadingVariants[productId] = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al cargar variantes', err);
+        this.loadingVariants[productId] = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  updateVariantStockInline(variant: VarianteProducto, productId: number): void {
+    this.productoService.updateVariante(variant).subscribe({
+      next: () => {
+        console.log('Stock actualizado para ' + variant.sku);
+        this.cdr.markForCheck();
+      },
+      error: (err) => console.error('Error al actualizar variante', err)
+    });
+  }
+
   closeVariantsModal(): void {
     this.showVariantsModal = false;
     this.editingVariant = null;
-    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
   }
 
   editVariant(v: VarianteProducto): void {
@@ -771,14 +1103,15 @@ export class InventarioComponent implements OnInit {
       color: v.color,
       stock: v.stock,
       sku: v.sku,
-      imagenUrl: v.imagenUrl || ''
+      imagenUrl: v.imagenUrl || '',
+      precio: v.precio || null
     };
     this.cdr.markForCheck();
   }
 
   cancelEditVariant(): void {
     this.editingVariant = null;
-    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+    this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
     this.cdr.markForCheck();
   }
 
@@ -792,7 +1125,8 @@ export class InventarioComponent implements OnInit {
         color: this.variantForm.color,
         stock: this.variantForm.stock,
         sku: this.variantForm.sku,
-        imagenUrl: this.variantForm.imagenUrl || undefined
+        imagenUrl: this.variantForm.imagenUrl || undefined,
+        precio: this.variantForm.precio || undefined
       };
 
       this.productoService.updateVariante(updatedVariant).subscribe({
@@ -810,12 +1144,13 @@ export class InventarioComponent implements OnInit {
         color: this.variantForm.color,
         stock: this.variantForm.stock,
         sku: this.variantForm.sku,
-        imagenUrl: this.variantForm.imagenUrl || undefined
+        imagenUrl: this.variantForm.imagenUrl || undefined,
+        precio: this.variantForm.precio || undefined
       };
 
       this.productoService.createVariante(newVariant).subscribe({
         next: () => {
-          this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '' };
+          this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
           this.loadVariantsForSelectedProduct();
           this.cdr.markForCheck();
         },
@@ -839,6 +1174,79 @@ export class InventarioComponent implements OnInit {
       this.productoService.deleteVariante(id).subscribe({
         next: () => this.loadVariantsForSelectedProduct(),
         error: (err) => console.error('Error al eliminar variante', err)
+      });
+    }
+  }
+
+  getSubcategoryName(subId: number): string {
+    const sub = this.subcategorias.find(s => s.id === subId);
+    return sub ? sub.nombre : 'Sin subcategoría';
+  }
+
+  onCategoryChange(): void {
+    this.productForm.subcategoriaId = null;
+    this.cdr.markForCheck();
+  }
+
+  getSubcategoriasForSelectedCategory(catId: number): Subcategoria[] {
+    return this.subcategorias.filter(s => s.categoriaId == catId && s.estado);
+  }
+
+  toggleCategoryExpand(c: Categoria): void {
+    const id = c.id!;
+    this.expandedCategories[id] = !this.expandedCategories[id];
+    this.cdr.markForCheck();
+  }
+
+  // Subcategory Modal
+  openSubcategoryModal(cat: Categoria, sub?: Subcategoria): void {
+    this.selectedCategoryForSubcategory = cat;
+    if (sub) {
+      this.editingSubcategory = sub;
+      this.subcategoryForm = {
+        id: sub.id,
+        categoriaId: sub.categoriaId,
+        nombre: sub.nombre,
+        descripcion: sub.descripcion || '',
+        estado: sub.estado
+      };
+    } else {
+      this.editingSubcategory = null;
+      this.subcategoryForm = {
+        id: undefined,
+        categoriaId: cat.id!,
+        nombre: '',
+        descripcion: '',
+        estado: true
+      };
+    }
+    this.showSubcategoryModal = true;
+  }
+
+  closeSubcategoryModal(): void {
+    this.showSubcategoryModal = false;
+  }
+
+  saveSubcategory(): void {
+    const operation = this.editingSubcategory?.id
+      ? this.productoService.updateSubcategoria(this.subcategoryForm)
+      : this.productoService.createSubcategoria(this.subcategoryForm);
+
+    operation.subscribe({
+      next: () => {
+        this.closeSubcategoryModal();
+        this.loadData();
+        this.cdr.markForCheck();
+      },
+      error: (err) => console.error('Error al guardar subcategoría', err)
+    });
+  }
+
+  deleteSubcategory(id: number, catId: number): void {
+    if (confirm('¿Estás seguro de eliminar esta subcategoría?')) {
+      this.productoService.deleteSubcategoria(id).subscribe({
+        next: () => this.loadData(),
+        error: (err) => console.error('Error al eliminar subcategoría', err)
       });
     }
   }

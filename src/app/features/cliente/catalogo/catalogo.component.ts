@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ProductoService, Producto, Categoria } from '../../../core/services/producto.service';
+import { ProductoService, Producto, Categoria, Subcategoria } from '../../../core/services/producto.service';
 
 @Component({
   selector: 'app-catalogo',
@@ -30,12 +30,25 @@ import { ProductoService, Producto, Categoria } from '../../../core/services/pro
           <div class="filter-group">
             <h3>Categorías</h3>
             <div class="category-list">
-              <button [class.active]="selectedCategory === null" (click)="selectCategory(null)" class="category-btn">
+              <button [class.active]="selectedCategory === null && selectedSubcategory === null" (click)="selectCategory(null)" class="category-btn">
                 Todos los productos
               </button>
-              <button *ngFor="let cat of categorias" [class.active]="selectedCategory === cat.id" (click)="selectCategory(cat.id!)" class="category-btn">
-                {{ cat.nombre }}
-              </button>
+              
+              <ng-container *ngFor="let cat of categorias">
+                <button [class.active]="selectedCategory === cat.id && selectedSubcategory === null" (click)="selectCategory(cat.id!)" class="category-btn">
+                  {{ cat.nombre }}
+                </button>
+                
+                <div class="subcategory-list" *ngIf="selectedCategory === cat.id && getSubcategoriasForCategory(cat.id!).length > 0">
+                  <button 
+                    *ngFor="let sub of getSubcategoriasForCategory(cat.id!)" 
+                    [class.active]="selectedSubcategory === sub.id" 
+                    (click)="selectSubcategory(sub.id!)" 
+                    class="subcategory-btn">
+                    ↳ {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-container>
             </div>
           </div>
         </aside>
@@ -157,6 +170,33 @@ import { ProductoService, Producto, Categoria } from '../../../core/services/pro
     .category-btn.active {
       font-weight: 600;
     }
+    .subcategory-list {
+      padding-left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .subcategory-btn {
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-fast);
+    }
+    .subcategory-btn:hover, .subcategory-btn.active {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+    .subcategory-btn.active {
+      font-weight: 600;
+    }
     .products-section {
       display: flex;
       flex-direction: column;
@@ -266,8 +306,10 @@ import { ProductoService, Producto, Categoria } from '../../../core/services/pro
 })
 export class CatalogoComponent implements OnInit {
   categorias: Categoria[] = [];
+  subcategorias: Subcategoria[] = [];
   productos: Producto[] = [];
   selectedCategory: number | null = null;
+  selectedSubcategory: number | null = null;
   searchTerm: string = '';
   loading: boolean = true;
 
@@ -285,7 +327,14 @@ export class CatalogoComponent implements OnInit {
     this.productoService.getActiveCategorias().subscribe({
       next: (data) => {
         this.categorias = data;
-        this.cdr.markForCheck();
+        
+        this.productoService.getActiveSubcategorias().subscribe({
+          next: (subs) => {
+            this.subcategorias = subs;
+            this.cdr.markForCheck();
+          },
+          error: (err) => console.error('Error al cargar subcategorías', err)
+        });
       },
       error: (err) => console.error('Error al cargar categorías', err)
     });
@@ -295,6 +344,7 @@ export class CatalogoComponent implements OnInit {
     this.loading = true;
     this.productoService.getProductos(
       this.selectedCategory !== null ? this.selectedCategory : undefined,
+      this.selectedSubcategory !== null ? this.selectedSubcategory : undefined,
       this.searchTerm ? this.searchTerm : undefined
     ).subscribe({
       next: (data) => {
@@ -312,7 +362,24 @@ export class CatalogoComponent implements OnInit {
 
   selectCategory(categoryId: number | null): void {
     this.selectedCategory = categoryId;
+    this.selectedSubcategory = null;
     this.loadProductos();
+  }
+
+  selectSubcategory(subcategoryId: number | null): void {
+    this.selectedSubcategory = subcategoryId;
+    if (subcategoryId !== null) {
+      // Find parent category to sync selectedCategory selection
+      const sub = this.subcategorias.find(s => s.id === subcategoryId);
+      if (sub) {
+        this.selectedCategory = sub.categoriaId;
+      }
+    }
+    this.loadProductos();
+  }
+
+  getSubcategoriasForCategory(catId: number): Subcategoria[] {
+    return this.subcategorias.filter(s => s.categoriaId === catId && s.estado);
   }
 
   onFilterChange(): void {

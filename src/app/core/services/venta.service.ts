@@ -8,6 +8,7 @@ export interface CheckoutRequest {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+  metodoEnvio?: string;
 }
 
 export interface AdminCheckoutItem {
@@ -21,13 +22,18 @@ export interface AdminCheckoutRequest {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+  fechaEnvioProgramada?: string | null;
   estado: string;
+  costoDelivery?: number;
+  metodoEnvio?: string;
   items: AdminCheckoutItem[];
 }
 
 export interface Venta {
   id?: number;
+  numeroComprobante?: number;
   fecha: string;
+  fechaEnvioProgramada?: string | null;
   totalProductos: number;
   costoDelivery: number;
   totalPagar: number;
@@ -36,6 +42,16 @@ export interface Venta {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+  metodoEnvio?: string;
+}
+
+export interface VentaFilters {
+  estado?: string;
+  cliente?: string;
+  fechaCreacionDesde?: string;
+  fechaCreacionHasta?: string;
+  fechaEnvioDesde?: string;
+  fechaEnvioHasta?: string;
 }
 
 export interface VentaDetalleDTO {
@@ -48,10 +64,18 @@ export interface VentaDetalleDTO {
   color: string;
 }
 
+export interface ProductSalesReportItem {
+  productoNombre: string;
+  cantidadVendida: number;
+  totalVendido: number;
+}
+
 export interface DashboardResponse {
   totalSales: number;
   totalRevenue: number;
   totalClients: number;
+  topProducts?: ProductSalesReportItem[];
+  allProducts?: ProductSalesReportItem[];
 }
 
 @Injectable({
@@ -63,18 +87,30 @@ export class VentaService {
 
   constructor(private http: HttpClient) {}
 
-  // Checkout (Public)
   checkout(sesionId: string, request: CheckoutRequest): Observable<Venta> {
     return this.http.post<Venta>(`${this.publicUrl}/${sesionId}`, request);
   }
 
-  // Admin Sales
-  getAllVentas(): Observable<Venta[]> {
-    return this.http.get<Venta[]>(`${this.adminUrl}/ventas`);
+  getAllVentas(filters?: VentaFilters): Observable<Venta[]> {
+    let params = new HttpParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, value);
+        }
+      });
+    }
+
+    return this.http.get<Venta[]>(`${this.adminUrl}/ventas`, { params });
   }
 
   registrarVentaAdmin(request: AdminCheckoutRequest): Observable<Venta> {
     return this.http.post<Venta>(`${this.adminUrl}/ventas`, request);
+  }
+
+  editarVentaAdmin(id: number, request: AdminCheckoutRequest): Observable<Venta> {
+    return this.http.put<Venta>(`${this.adminUrl}/ventas/${id}`, request);
   }
 
   getVentaById(id: number): Observable<Venta> {
@@ -86,12 +122,21 @@ export class VentaService {
   }
 
   updateVentaStatus(id: number, estado: string): Observable<Venta> {
-    let params = new HttpParams().set('estado', estado);
+    const params = new HttpParams().set('estado', estado);
     return this.http.patch<Venta>(`${this.adminUrl}/ventas/${id}/estado`, {}, { params });
   }
 
-  // Admin Dashboard
-  getDashboardStats(): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`${this.adminUrl}/dashboard`);
+  updateFechaEnvioProgramada(id: number, fechaEnvioProgramada: string | null): Observable<Venta> {
+    return this.http.patch<Venta>(
+      `${this.adminUrl}/ventas/${id}/fecha-envio-programada`,
+      { fechaEnvioProgramada }
+    );
+  }
+
+  getDashboardStats(desde?: string, hasta?: string): Observable<DashboardResponse> {
+    let params = new HttpParams();
+    if (desde) params = params.set('desde', desde);
+    if (hasta) params = params.set('hasta', hasta);
+    return this.http.get<DashboardResponse>(`${this.adminUrl}/dashboard`, { params });
   }
 }

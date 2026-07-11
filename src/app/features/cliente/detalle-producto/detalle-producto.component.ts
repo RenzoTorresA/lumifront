@@ -29,7 +29,9 @@ import { CarritoService } from '../../../core/services/carrito.service';
         <!-- Information & Configurations -->
         <section class="info-section">
           <h1 class="product-title">{{ producto.nombre }}</h1>
-          <p class="price">S/ {{ producto.precioBase | number:'1.2-2' }}</p>
+          <p class="price">
+            S/ {{ (selectedVariant && selectedVariant.precio) ? (selectedVariant.precio | number:'1.2-2') : (producto.precioBase | number:'1.2-2') }}
+          </p>
           <p class="description" *ngIf="producto.descripcion">{{ producto.descripcion }}</p>
 
           <!-- Configuration options -->
