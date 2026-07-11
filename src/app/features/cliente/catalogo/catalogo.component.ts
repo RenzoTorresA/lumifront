@@ -13,7 +13,7 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       <!-- Hero Banner -->
       <section class="hero">
         <div class="hero-content">
-          <h1>Colección Luminescente</h1>
+          <h1>Colección Lumi Store</h1>
           <p>Elegancia en cada detalle. Prendas minimalistas para tu estilo diario.</p>
         </div>
       </section>
