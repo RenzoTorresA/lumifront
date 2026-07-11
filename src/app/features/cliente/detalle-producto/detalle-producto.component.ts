@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProductoService, Producto, VarianteProducto } from '../../../core/services/producto.service';
 import { CarritoService } from '../../../core/services/carrito.service';
+import { showErrorAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-detalle-producto',
@@ -498,7 +499,7 @@ export class DetalleProductoComponent implements OnInit {
         console.error('Error al añadir al carrito', err);
         this.adding = false;
         this.cdr.markForCheck();
-        alert(err.error?.message || 'Error al añadir el producto al carrito');
+        void showErrorAlert('No se pudo agregar al carrito', err.error?.message || 'Error al añadir el producto al carrito');
       }
     });
   }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { CompraService, Compra, CompraItem, CompraRequest } from '../../../core/services/compra.service';
 import { ProductoService, Producto, VarianteProducto } from '../../../core/services/producto.service';
+import { showErrorAlert, showSuccessAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-compras-admin',
@@ -668,14 +669,14 @@ export class ComprasAdminComponent implements OnInit {
       next: (compra) => {
         this.submittingCompra = false;
         this.showCreateCompraModal = false;
-        alert(`Ingreso #COMPRA-${compra.id} registrado con éxito.`);
+        void showSuccessAlert('Compra registrada', `Ingreso #COMPRA-${compra.id} registrado con éxito.`);
         this.loadCompras();
         this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error al registrar compra manual', err);
         this.submittingCompra = false;
-        alert(err.error?.message || 'Error al procesar la compra.');
+        void showErrorAlert('No se pudo registrar la compra', err.error?.message || 'Error al procesar la compra.');
         this.cdr.markForCheck();
       }
     });
