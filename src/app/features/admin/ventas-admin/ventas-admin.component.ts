@@ -61,22 +61,33 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
               <div class="search-box">
                 <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Buscar por cliente o teléfono..." class="filter-input" />
               </div>
-              <div class="filter-group">
-                <label>Creado desde</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Creado hasta</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Envío desde</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Envío hasta</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
+
+              <button type="button" class="btn-secondary" (click)="toggleDateFilterType()">
+                📅 {{ dateFilterType === 'creacion' ? 'Fechas: Creación' : 'Fechas: Envío' }}
+              </button>
+
+              <ng-container *ngIf="dateFilterType === 'creacion'">
+                <div class="filter-group">
+                  <label>Creado desde</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+                <div class="filter-group">
+                  <label>Creado hasta</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+              </ng-container>
+
+              <ng-container *ngIf="dateFilterType === 'envio'">
+                <div class="filter-group">
+                  <label>Envío desde</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+                <div class="filter-group">
+                  <label>Envío hasta</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+              </ng-container>
+
               <button type="button" class="btn-secondary" (click)="clearServerFilters()">Limpiar fechas</button>
             </div>
 
@@ -94,7 +105,14 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('pendiente')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">{{ getDisplayCode(v) }}</span>
+                    <div class="card-title-group">
+                      <span class="card-code">{{ getDisplayCode(v) }}</span>
+                      <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -153,14 +171,32 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                   </div>
                   <!-- Card Footer Actions -->
                   <div class="card-footer-actions">
-                    <label class="status-label">Estado:</label>
-                    <select [ngModel]="v.estado" (change)="updateStatus(v.id!, $any($event.target).value)" class="card-status-select" [class]="v.estado">
-                      <option value="pendiente">pendiente</option>
-                      <option value="completado">pagado</option>
-                      <option value="enviado">enviado</option>
-                      <option value="entregado">entregado</option>
-                      <option value="cancelado">cancelado</option>
-                    </select>
+                    <span class="table-status-pill card-status-pill" [ngClass]="v.estado">
+                      {{ v.estado === 'completado' ? 'pagado' : v.estado }}
+                    </span>
+                    
+                    <div class="state-buttons">
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMovePrevious(v.estado)"
+                        (click)="movePrevious(v)" 
+                        title="Retroceder estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMoveNext(v.estado)"
+                        (click)="moveNext(v)" 
+                        title="Avanzar estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -178,7 +214,14 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('completado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">{{ getDisplayCode(v) }}</span>
+                    <div class="card-title-group">
+                      <span class="card-code">{{ getDisplayCode(v) }}</span>
+                      <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -237,14 +280,32 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                   </div>
                   <!-- Card Footer Actions -->
                   <div class="card-footer-actions">
-                    <label class="status-label">Estado:</label>
-                    <select [ngModel]="v.estado" (change)="updateStatus(v.id!, $any($event.target).value)" class="card-status-select" [class]="v.estado">
-                      <option value="pendiente">pendiente</option>
-                      <option value="completado">pagado</option>
-                      <option value="enviado">enviado</option>
-                      <option value="entregado">entregado</option>
-                      <option value="cancelado">cancelado</option>
-                    </select>
+                    <span class="table-status-pill card-status-pill" [ngClass]="v.estado">
+                      {{ v.estado === 'completado' ? 'pagado' : v.estado }}
+                    </span>
+                    
+                    <div class="state-buttons">
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMovePrevious(v.estado)"
+                        (click)="movePrevious(v)" 
+                        title="Retroceder estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMoveNext(v.estado)"
+                        (click)="moveNext(v)" 
+                        title="Avanzar estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -262,7 +323,14 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('enviado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">{{ getDisplayCode(v) }}</span>
+                    <div class="card-title-group">
+                      <span class="card-code">{{ getDisplayCode(v) }}</span>
+                      <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -321,14 +389,32 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                   </div>
                   <!-- Card Footer Actions -->
                   <div class="card-footer-actions">
-                    <label class="status-label">Estado:</label>
-                    <select [ngModel]="v.estado" (change)="updateStatus(v.id!, $any($event.target).value)" class="card-status-select" [class]="v.estado">
-                      <option value="pendiente">pendiente</option>
-                      <option value="completado">pagado</option>
-                      <option value="enviado">enviado</option>
-                      <option value="entregado">entregado</option>
-                      <option value="cancelado">cancelado</option>
-                    </select>
+                    <span class="table-status-pill card-status-pill" [ngClass]="v.estado">
+                      {{ v.estado === 'completado' ? 'pagado' : v.estado }}
+                    </span>
+                    
+                    <div class="state-buttons">
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMovePrevious(v.estado)"
+                        (click)="movePrevious(v)" 
+                        title="Retroceder estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn-state-nav" 
+                        [disabled]="!canMoveNext(v.estado)"
+                        (click)="moveNext(v)" 
+                        title="Avanzar estado">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -346,7 +432,14 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                 <div *ngFor="let v of getVentasByStatus('entregado')" class="kanban-card">
                   <!-- Card Header -->
                   <div class="card-header">
-                    <span class="card-code">{{ getDisplayCode(v) }}</span>
+                    <div class="card-title-group">
+                      <span class="card-code">{{ getDisplayCode(v) }}</span>
+                      <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
                   <!-- Card Content -->
@@ -421,7 +514,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
           </ng-container>
 
           <ng-template #salesTableView>
-            <div class="table-toolbar">
+            <div class="table-toolbar" style="gap: 16px; align-items: center;">
               <div class="search-box table-search-box">
                 <input
                   type="text"
@@ -430,22 +523,32 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                   placeholder="Buscar por nombre del cliente..."
                   class="filter-input" />
               </div>
-              <div class="filter-group">
-                <label>Creado desde</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Creado hasta</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Envío desde</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
-              <div class="filter-group">
-                <label>Envío hasta</label>
-                <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
-              </div>
+
+              <button type="button" class="btn-secondary" (click)="toggleDateFilterType()">
+                📅 {{ dateFilterType === 'creacion' ? 'Fechas: Creación' : 'Fechas: Envío' }}
+              </button>
+
+              <ng-container *ngIf="dateFilterType === 'creacion'">
+                <div class="filter-group">
+                  <label>Creado desde</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaCreacionDesde" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+                <div class="filter-group">
+                  <label>Creado hasta</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaCreacionHasta" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+              </ng-container>
+
+              <ng-container *ngIf="dateFilterType === 'envio'">
+                <div class="filter-group">
+                  <label>Envío desde</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaEnvioDesde" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+                <div class="filter-group">
+                  <label>Envío hasta</label>
+                  <input type="date" [(ngModel)]="serverFilters.fechaEnvioHasta" (change)="onServerFiltersChange()" class="filter-input" />
+                </div>
+              </ng-container>
             </div>
 
             <div class="table-card">
@@ -460,11 +563,12 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                       <th>Ubicación</th>
                       <th>Total</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngIf="tableVentas.length === 0">
-                      <td colspan="7" class="empty-row">No se encontraron ventas para ese cliente</td>
+                      <td colspan="8" class="empty-row">No se encontraron ventas para ese cliente</td>
                     </tr>
                     <tr *ngFor="let v of tableVentas">
                       <td class="sales-table-code">{{ getDisplayCode(v) }}</td>
@@ -475,6 +579,13 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                       <td>S/ {{ v.totalPagar | number:'1.2-2' }}</td>
                       <td>
                         <span class="table-status-pill" [ngClass]="v.estado">{{ v.estado }}</span>
+                      </td>
+                      <td>
+                        <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -487,13 +598,39 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
         <!-- ================= MODAL: REGISTRAR VENTA MANUAL ================= -->
         <div class="modal-overlay" *ngIf="showCreateSaleModal" (click)="closeCreateSaleModal()">
           <div class="modal modal-lg" (click)="$event.stopPropagation()">
-            <h3>Registrar Nueva Venta Manual</h3>
+            <h3>{{ isEditMode && editingVenta ? 'Editar Venta: ' + getDisplayCode(editingVenta) : 'Registrar Nueva Venta Manual' }}</h3>
             
             <form (submit)="submitManualSale()" class="modal-form">
               <div class="modal-grid">
                 <!-- Left side: Client Info -->
                 <div class="form-section-column">
                   <h4>Datos del Cliente</h4>
+                  
+                  <!-- Shipping Method Radio/Toggle Selector -->
+                  <div class="form-group">
+                    <label>Método de Envío</label>
+                    <div class="shipping-method-selector-admin">
+                      <button type="button" 
+                        [class.active]="saleForm.metodoEnvio === 'DELIVERY_LOCAL'"
+                        (click)="changeAdminShippingMethod('DELIVERY_LOCAL')"
+                        class="admin-method-btn">
+                        📍 Delivery
+                      </button>
+                      <button type="button" 
+                        [class.active]="saleForm.metodoEnvio === 'RECOJO_TIENDA'"
+                        (click)="changeAdminShippingMethod('RECOJO_TIENDA')"
+                        class="admin-method-btn">
+                        🏪 Tienda
+                      </button>
+                      <button type="button" 
+                        [class.active]="saleForm.metodoEnvio === 'ENVIO_PROVINCIA'"
+                        (click)="changeAdminShippingMethod('ENVIO_PROVINCIA')"
+                        class="admin-method-btn">
+                        🚚 Provincia
+                      </button>
+                    </div>
+                  </div>
+
                   <div class="form-group">
                     <label>Nombre del Cliente</label>
                     <input type="text" [(ngModel)]="saleForm.clienteNombre" name="mClienteNombre" required placeholder="Nombre y Apellidos" class="filter-input w-full" />
@@ -502,32 +639,40 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
                     <label>Teléfono / Celular</label>
                     <input type="text" [(ngModel)]="saleForm.clienteTelefono" name="mClienteTelefono" required placeholder="Ej: 987654321" class="filter-input w-full" />
                   </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="form-group">
-                      <label>Departamento</label>
-                      <select [(ngModel)]="selectedDpto" (change)="onDptoChange()" name="mDpto" required class="filter-select w-full">
-                        <option value="" disabled selected>Departamento</option>
-                        <option *ngFor="let d of departamentos" [value]="d.coddpto">{{ d.nombre }}</option>
-                      </select>
+
+                  <ng-container *ngIf="saleForm.metodoEnvio === 'ENVIO_PROVINCIA'">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group">
+                        <label>Departamento</label>
+                        <select [(ngModel)]="selectedDpto" (change)="onDptoChange()" name="mDpto" required class="filter-select w-full">
+                          <option value="" disabled selected>Departamento</option>
+                          <option *ngFor="let d of departamentos" [value]="d.coddpto">{{ d.nombre }}</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Provincia</label>
+                        <select [(ngModel)]="selectedProv" (change)="onProvChange()" [disabled]="!selectedDpto" name="mProv" required class="filter-select w-full">
+                          <option value="" disabled selected>Provincia</option>
+                          <option *ngFor="let p of provincias" [value]="p.codprov">{{ p.nombre }}</option>
+                        </select>
+                      </div>
                     </div>
                     <div class="form-group">
-                      <label>Provincia</label>
-                      <select [(ngModel)]="selectedProv" (change)="onProvChange()" [disabled]="!selectedDpto" name="mProv" required class="filter-select w-full">
-                        <option value="" disabled selected>Provincia</option>
-                        <option *ngFor="let p of provincias" [value]="p.codprov">{{ p.nombre }}</option>
+                      <label>Distrito (Envío)</label>
+                      <select [(ngModel)]="saleForm.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" name="mUbigeoId" required class="filter-select w-full">
+                        <option value="" disabled selected>Selecciona distrito</option>
+                        <option *ngFor="let di of distritos" [value]="di.id">
+                          {{ di.nombre }}
+                        </option>
                       </select>
                     </div>
+                  </ng-container>
+
+                  <div class="form-group" *ngIf="saleForm.metodoEnvio !== 'RECOJO_TIENDA'">
+                    <label>Costo Delivery (S/)</label>
+                    <input type="number" step="0.01" [(ngModel)]="saleForm.costoDelivery" name="mCostoDelivery" required class="filter-input w-full" />
                   </div>
-                  <div class="form-group">
-                    <label>Distrito (Envío)</label>
-                    <select [(ngModel)]="saleForm.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" name="mUbigeoId" required class="filter-select w-full">
-                      <option value="" disabled selected>Selecciona distrito</option>
-                      <option *ngFor="let di of distritos" [value]="di.id">
-                        {{ di.nombre }} (Envío: S/ {{ di.precioDelivery | number:'1.2-2' }})
-                      </option>
-                    </select>
-                  </div>
-                  <div class="form-group">
+                  <div class="form-group" *ngIf="saleForm.metodoEnvio !== 'RECOJO_TIENDA'">
                     <label>Dirección y Referencia</label>
                     <textarea [(ngModel)]="saleForm.direccionReferencia" name="mDireccion" required rows="2" placeholder="Ej: Av. Larco 123 Dpto 401" class="filter-input w-full textarea-field"></textarea>
                   </div>
@@ -626,7 +771,7 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
               <div class="modal-actions-row">
                 <button type="button" (click)="closeCreateSaleModal()" class="btn-secondary">Cancelar</button>
                 <button type="submit" [disabled]="saleItems.length === 0 || submittingSale" class="action-btn">
-                  {{ submittingSale ? 'Procesando...' : 'Registrar Pedido' }}
+                  {{ submittingSale ? 'Procesando...' : (isEditMode ? 'Actualizar Pedido' : 'Registrar Pedido') }}
                 </button>
               </div>
             </form>
@@ -842,6 +987,29 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
       justify-content: space-between;
       align-items: center;
     }
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-edit-link {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      line-height: 1;
+    }
+    .edit-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--admin-text-secondary);
+      transition: var(--transition-fast);
+    }
+    .edit-icon:hover {
+      color: var(--admin-accent);
+    }
     .card-code {
       font-size: 14px;
       font-weight: 700;
@@ -957,22 +1125,42 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
       padding-top: 8px;
       border-top: 1px solid var(--admin-border-color);
     }
-    .status-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--admin-text-secondary);
+    .state-buttons {
+      display: flex;
+      gap: 6px;
     }
-    .card-status-select {
-      font-size: 12px;
+    .btn-state-nav {
+      background: var(--admin-bg-base);
+      border: 1px solid var(--admin-border-color);
+      color: var(--admin-text-secondary);
+      border-radius: var(--radius-md);
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      padding: 0;
+    }
+    .btn-state-nav:hover:not(:disabled) {
+      background: var(--admin-border-color);
+      color: var(--admin-text-primary);
+      border-color: var(--admin-text-secondary);
+    }
+    .btn-state-nav:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .nav-icon {
+      width: 14px;
+      height: 14px;
+    }
+    .card-status-pill {
+      font-size: 11px;
       padding: 4px 8px;
       border-radius: var(--radius-md);
-      border: 1px solid var(--admin-border-color);
-      font-weight: 600;
-      cursor: pointer;
-      outline: none;
-      font-family: var(--font-body);
-      transition: var(--transition-fast);
+      text-transform: capitalize;
     }
     select.card-status-select.pendiente {
       background: rgba(245, 158, 11, 0.1);
@@ -1338,6 +1526,32 @@ import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
       opacity: 0.5;
       cursor: not-allowed;
     }
+    .shipping-method-selector-admin {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .admin-method-btn {
+      background: var(--admin-bg-base);
+      border: 1px solid var(--admin-border-color);
+      border-radius: var(--radius-md);
+      padding: 8px 4px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-align: center;
+      color: var(--admin-text-primary);
+    }
+    .admin-method-btn:hover {
+      border-color: var(--admin-text-primary);
+    }
+    .admin-method-btn.active {
+      background: var(--admin-accent);
+      color: white;
+      border-color: var(--admin-accent);
+    }
   `]
 })
 export class VentasAdminComponent implements OnInit {
@@ -1356,10 +1570,66 @@ export class VentasAdminComponent implements OnInit {
     fechaEnvioDesde: '',
     fechaEnvioHasta: ''
   };
+  dateFilterType: 'creacion' | 'envio' = 'creacion';
+
+  toggleDateFilterType(): void {
+    this.dateFilterType = this.dateFilterType === 'creacion' ? 'envio' : 'creacion';
+    
+    this.serverFilters = {
+      fechaCreacionDesde: '',
+      fechaCreacionHasta: '',
+      fechaEnvioDesde: '',
+      fechaEnvioHasta: ''
+    };
+
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    if (this.dateFilterType === 'creacion') {
+      this.serverFilters.fechaCreacionDesde = this.formatDate(firstDay);
+      this.serverFilters.fechaCreacionHasta = this.formatDate(lastDay);
+    } else {
+      this.serverFilters.fechaEnvioDesde = this.formatDate(firstDay);
+      this.serverFilters.fechaEnvioHasta = this.formatDate(lastDay);
+    }
+
+    this.loadVentas();
+    this.cdr.markForCheck();
+  }
+
+  STATES_ORDER = ['pendiente', 'completado', 'enviado', 'entregado'];
+
+  canMovePrevious(estado: string): boolean {
+    const idx = this.STATES_ORDER.indexOf(estado);
+    return idx > 0;
+  }
+
+  canMoveNext(estado: string): boolean {
+    const idx = this.STATES_ORDER.indexOf(estado);
+    return idx !== -1 && idx < this.STATES_ORDER.length - 1;
+  }
+
+  movePrevious(venta: Venta): void {
+    const idx = this.STATES_ORDER.indexOf(venta.estado);
+    if (idx > 0) {
+      this.updateStatus(venta.id!, this.STATES_ORDER[idx - 1]);
+    }
+  }
+
+  moveNext(venta: Venta): void {
+    const idx = this.STATES_ORDER.indexOf(venta.estado);
+    if (idx !== -1 && idx < this.STATES_ORDER.length - 1) {
+      this.updateStatus(venta.id!, this.STATES_ORDER[idx + 1]);
+    }
+  }
 
   // Manual sale state
   showCreateSaleModal = false;
   submittingSale = false;
+  isEditMode = false;
+  editingVentaId: number | null = null;
+  editingVenta: Venta | null = null;
   productos: Producto[] = [];
   ubigeos: Ubigeo[] = [];
   
@@ -1381,7 +1651,9 @@ export class VentasAdminComponent implements OnInit {
     ubigeoId: '',
     direccionReferencia: '',
     fechaEnvioProgramada: '',
-    estado: 'pendiente'
+    estado: 'pendiente',
+    costoDelivery: 0,
+    metodoEnvio: 'DELIVERY_LOCAL'
   };
   
   saleItems: {
@@ -1406,7 +1678,24 @@ export class VentasAdminComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  setDefaultDateFilters(): void {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    this.serverFilters.fechaCreacionDesde = this.formatDate(firstDay);
+    this.serverFilters.fechaCreacionHasta = this.formatDate(lastDay);
+  }
+
   ngOnInit(): void {
+    this.setDefaultDateFilters();
     this.loadInitialData();
   }
 
@@ -1594,13 +1883,18 @@ export class VentasAdminComponent implements OnInit {
   }
 
   openCreateSaleModal(): void {
+    this.isEditMode = false;
+    this.editingVentaId = null;
+    this.editingVenta = null;
     this.saleForm = {
       clienteNombre: '',
       clienteTelefono: '',
-      ubigeoId: '',
+      ubigeoId: '250101',
       direccionReferencia: '',
       fechaEnvioProgramada: '',
-      estado: 'pendiente'
+      estado: 'pendiente',
+      costoDelivery: 0,
+      metodoEnvio: 'DELIVERY_LOCAL'
     };
     this.saleItems = [];
     this.selectedDpto = '';
@@ -1608,6 +1902,80 @@ export class VentasAdminComponent implements OnInit {
     this.provincias = [];
     this.distritos = [];
     this.resetSelectedItemFields();
+    this.showCreateSaleModal = true;
+    this.cdr.markForCheck();
+  }
+
+  openEditSaleModal(venta: Venta): void {
+    this.isEditMode = true;
+    this.editingVentaId = venta.id ?? null;
+    this.editingVenta = venta;
+    
+    this.saleForm = {
+      clienteNombre: venta.clienteNombre,
+      clienteTelefono: venta.clienteTelefono,
+      ubigeoId: venta.ubigeoId,
+      direccionReferencia: venta.direccionReferencia,
+      fechaEnvioProgramada: this.getDateInputValue(venta.fechaEnvioProgramada),
+      estado: venta.estado,
+      costoDelivery: venta.costoDelivery,
+      metodoEnvio: venta.metodoEnvio || 'DELIVERY_LOCAL'
+    };
+    
+    this.saleItems = [];
+    this.resetSelectedItemFields();
+    
+    const targetUbigeo = this.ubigeos.find(u => u.id === venta.ubigeoId);
+    if (targetUbigeo) {
+      this.selectedDpto = targetUbigeo.coddpto;
+      this.provincias = this.ubigeos.filter(u => u.coddpto === this.selectedDpto && u.codprov !== '00' && u.coddist === '00');
+      this.selectedProv = targetUbigeo.codprov;
+      this.distritos = this.ubigeos.filter(u => u.coddpto === this.selectedDpto && u.codprov === this.selectedProv && u.coddist !== '00');
+    } else {
+      this.selectedDpto = '';
+      this.selectedProv = '';
+      this.provincias = [];
+      this.distritos = [];
+    }
+
+    if (venta.id) {
+      this.submittingSale = true;
+      this.ventaService.getVentaDetalles(venta.id).subscribe({
+        next: (details) => {
+          this.saleItems = details.map(d => {
+            const product = this.productos.find(p => p.nombre === d.productoNombre) || {
+              id: 0,
+              categoriaId: 0,
+              nombre: d.productoNombre,
+              precioBase: d.precioUnitario
+            };
+            const variante: VarianteProducto = {
+              id: d.varianteId,
+              productoId: product.id!,
+              talla: d.talla,
+              color: d.color,
+              sku: d.sku,
+              stock: 999
+            };
+            return {
+              producto: product,
+              variante: variante,
+              cantidad: d.cantidad,
+              precioUnitario: d.precioUnitario,
+              subtotal: d.precioUnitario * d.cantidad
+            };
+          });
+          this.submittingSale = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error loading sale details for editing', err);
+          this.submittingSale = false;
+          this.cdr.markForCheck();
+        }
+      });
+    }
+
     this.showCreateSaleModal = true;
     this.cdr.markForCheck();
   }
@@ -1627,6 +1995,30 @@ export class VentasAdminComponent implements OnInit {
   }
 
   onDistChange(): void {
+    if (this.saleForm.ubigeoId && this.saleForm.metodoEnvio === 'ENVIO_PROVINCIA') {
+      const ubigeo = this.ubigeos.find(u => u.id === this.saleForm.ubigeoId);
+      if (ubigeo) {
+        this.saleForm.costoDelivery = ubigeo.precioDelivery;
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
+  changeAdminShippingMethod(method: string): void {
+    this.saleForm.metodoEnvio = method;
+    if (method === 'RECOJO_TIENDA') {
+      this.saleForm.costoDelivery = 0;
+      this.saleForm.ubigeoId = '';
+    } else if (method === 'DELIVERY_LOCAL') {
+      this.saleForm.costoDelivery = 0;
+      this.saleForm.ubigeoId = '250101'; // Calleria / Pucallpa
+    } else if (method === 'ENVIO_PROVINCIA') {
+      this.saleForm.ubigeoId = '';
+      this.saleForm.costoDelivery = 0;
+      this.selectedDpto = '';
+      this.selectedProv = '';
+      this.distritos = [];
+    }
     this.cdr.markForCheck();
   }
 
@@ -1728,9 +2120,7 @@ export class VentasAdminComponent implements OnInit {
   }
 
   getSaleDeliveryFee(): number {
-    if (!this.saleForm.ubigeoId) return 0;
-    const ubigeo = this.ubigeos.find(u => u.id === this.saleForm.ubigeoId);
-    return ubigeo ? ubigeo.precioDelivery : 0;
+    return this.saleForm.costoDelivery || 0;
   }
 
   submitManualSale(): void {
@@ -1745,6 +2135,8 @@ export class VentasAdminComponent implements OnInit {
       direccionReferencia: this.saleForm.direccionReferencia,
       fechaEnvioProgramada: this.toDateTimeString(this.saleForm.fechaEnvioProgramada),
       estado: this.saleForm.estado,
+      costoDelivery: this.saleForm.costoDelivery || 0,
+      metodoEnvio: this.saleForm.metodoEnvio,
       items: this.saleItems.map(item => ({
         varianteId: item.variante.id!,
         cantidad: item.cantidad,
@@ -1752,20 +2144,38 @@ export class VentasAdminComponent implements OnInit {
       }))
     };
     
-    this.ventaService.registrarVentaAdmin(request).subscribe({
-      next: (venta) => {
-        this.submittingSale = false;
-        this.showCreateSaleModal = false;
-        alert(`${this.getDisplayCode(venta)} registrado con éxito.`);
-        this.loadVentas();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error al registrar venta manual', err);
-        this.submittingSale = false;
-        alert(err.error?.message || 'Error al procesar la venta manual.');
-        this.cdr.markForCheck();
-      }
-    });
+    if (this.isEditMode && this.editingVentaId) {
+      this.ventaService.editarVentaAdmin(this.editingVentaId, request).subscribe({
+        next: (venta) => {
+          this.submittingSale = false;
+          this.showCreateSaleModal = false;
+          alert(`${this.getDisplayCode(venta)} actualizado con éxito.`);
+          this.loadVentas();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error al actualizar venta', err);
+          this.submittingSale = false;
+          alert(err.error?.message || 'Error al actualizar la venta.');
+          this.cdr.markForCheck();
+        }
+      });
+    } else {
+      this.ventaService.registrarVentaAdmin(request).subscribe({
+        next: (venta) => {
+          this.submittingSale = false;
+          this.showCreateSaleModal = false;
+          alert(`${this.getDisplayCode(venta)} registrado con éxito.`);
+          this.loadVentas();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error al registrar venta manual', err);
+          this.submittingSale = false;
+          alert(err.error?.message || 'Error al procesar la venta manual.');
+          this.cdr.markForCheck();
+        }
+      });
+    }
   }
 }

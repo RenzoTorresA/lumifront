@@ -8,6 +8,7 @@ export interface CheckoutRequest {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+  metodoEnvio?: string;
 }
 
 export interface AdminCheckoutItem {
@@ -23,6 +24,8 @@ export interface AdminCheckoutRequest {
   direccionReferencia: string;
   fechaEnvioProgramada?: string | null;
   estado: string;
+  costoDelivery?: number;
+  metodoEnvio?: string;
   items: AdminCheckoutItem[];
 }
 
@@ -39,6 +42,7 @@ export interface Venta {
   clienteTelefono: string;
   ubigeoId: string;
   direccionReferencia: string;
+  metodoEnvio?: string;
 }
 
 export interface VentaFilters {
@@ -60,10 +64,18 @@ export interface VentaDetalleDTO {
   color: string;
 }
 
+export interface ProductSalesReportItem {
+  productoNombre: string;
+  cantidadVendida: number;
+  totalVendido: number;
+}
+
 export interface DashboardResponse {
   totalSales: number;
   totalRevenue: number;
   totalClients: number;
+  topProducts?: ProductSalesReportItem[];
+  allProducts?: ProductSalesReportItem[];
 }
 
 @Injectable({
@@ -97,6 +109,10 @@ export class VentaService {
     return this.http.post<Venta>(`${this.adminUrl}/ventas`, request);
   }
 
+  editarVentaAdmin(id: number, request: AdminCheckoutRequest): Observable<Venta> {
+    return this.http.put<Venta>(`${this.adminUrl}/ventas/${id}`, request);
+  }
+
   getVentaById(id: number): Observable<Venta> {
     return this.http.get<Venta>(`${this.adminUrl}/ventas/${id}`);
   }
@@ -117,7 +133,10 @@ export class VentaService {
     );
   }
 
-  getDashboardStats(): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`${this.adminUrl}/dashboard`);
+  getDashboardStats(desde?: string, hasta?: string): Observable<DashboardResponse> {
+    let params = new HttpParams();
+    if (desde) params = params.set('desde', desde);
+    if (hasta) params = params.set('hasta', hasta);
+    return this.http.get<DashboardResponse>(`${this.adminUrl}/dashboard`, { params });
   }
 }
