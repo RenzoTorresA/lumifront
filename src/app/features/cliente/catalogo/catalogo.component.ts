@@ -14,7 +14,7 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       <section class="hero">
         <div class="hero-content">
           <h1>Colección Lumi Store</h1>
-          <p>Elegancia en cada detalle. Prendas minimalistas para tu estilo diario.</p>
+          <p>El balance perfecto entre tendencia, comodidad y originalidad. Descubre lo nuevo que tenemos para renovar tu look.</p>
         </div>
       </section>
 
