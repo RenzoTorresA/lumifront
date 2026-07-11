@@ -5,6 +5,7 @@ import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/
 import { VentaService, Venta, AdminCheckoutRequest, VentaFilters } from '../../../core/services/venta.service';
 import { ProductoService, Producto, VarianteProducto } from '../../../core/services/producto.service';
 import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
+import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-ventas-admin',
@@ -1846,7 +1847,7 @@ export class VentasAdminComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al actualizar estado de venta', err);
-        alert(err.error?.message || 'Error al cambiar estado de la venta');
+        void showErrorAlert('No se pudo cambiar el estado', err.error?.message || 'Error al cambiar estado de la venta');
         this.loadVentas(); // Reload to revert UI state
       }
     });
@@ -1864,7 +1865,7 @@ export class VentasAdminComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al actualizar fecha de envío programada', err);
-        alert(err.error?.message || 'Error al actualizar la fecha de envío programada');
+        void showErrorAlert('No se pudo actualizar la fecha', err.error?.message || 'Error al actualizar la fecha de envío programada');
         this.loadVentas();
       }
     });
@@ -2087,7 +2088,7 @@ export class VentasAdminComponent implements OnInit {
     const newQty = (existingIndex !== -1 ? this.saleItems[existingIndex].cantidad : 0) + this.selectedQuantity;
     
     if (newQty > variante.stock) {
-      alert(`No puedes agregar más de la cantidad en stock disponible (${variante.stock} unidades).`);
+      void showWarningAlert('Stock insuficiente', `No puedes agregar más de la cantidad en stock disponible (${variante.stock} unidades).`);
       return;
     }
     
@@ -2149,14 +2150,14 @@ export class VentasAdminComponent implements OnInit {
         next: (venta) => {
           this.submittingSale = false;
           this.showCreateSaleModal = false;
-          alert(`${this.getDisplayCode(venta)} actualizado con éxito.`);
+          void showSuccessAlert('Venta actualizada', `${this.getDisplayCode(venta)} actualizado con éxito.`);
           this.loadVentas();
           this.cdr.markForCheck();
         },
         error: (err) => {
           console.error('Error al actualizar venta', err);
           this.submittingSale = false;
-          alert(err.error?.message || 'Error al actualizar la venta.');
+          void showErrorAlert('No se pudo actualizar la venta', err.error?.message || 'Error al actualizar la venta.');
           this.cdr.markForCheck();
         }
       });
@@ -2165,14 +2166,14 @@ export class VentasAdminComponent implements OnInit {
         next: (venta) => {
           this.submittingSale = false;
           this.showCreateSaleModal = false;
-          alert(`${this.getDisplayCode(venta)} registrado con éxito.`);
+          void showSuccessAlert('Venta registrada', `${this.getDisplayCode(venta)} registrado con éxito.`);
           this.loadVentas();
           this.cdr.markForCheck();
         },
         error: (err) => {
           console.error('Error al registrar venta manual', err);
           this.submittingSale = false;
-          alert(err.error?.message || 'Error al procesar la venta manual.');
+          void showErrorAlert('No se pudo registrar la venta', err.error?.message || 'Error al procesar la venta manual.');
           this.cdr.markForCheck();
         }
       });

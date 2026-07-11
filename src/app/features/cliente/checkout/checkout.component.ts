@@ -1,10 +1,11 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CarritoService, CartResponse } from '../../../core/services/carrito.service';
+import { CarritoService, CartResponse, CartItemResponse } from '../../../core/services/carrito.service';
 import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
 import { VentaService, CheckoutRequest, Venta } from '../../../core/services/venta.service';
+import { showErrorAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-checkout',
@@ -136,17 +137,22 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
       <div class="success-screen animate-fade-in" *ngIf="successOrder">
         <div class="success-card">
           <div class="success-icon">✓</div>
-          <h1>¡Pedido Recibido!</h1>
-          <p class="order-msg">Tu pedido ha sido registrado con éxito. Nos pondremos en contacto contigo pronto.</p>
-          
+          <h1>¡Pedido Registrado!</h1>
+          <p class="order-msg">Tu pedido quedó registrado y pendiente de pago. Ahora te llevamos a WhatsApp para coordinar el pago y la entrega.</p>
+
           <div class="order-details">
-            <p><strong>Código de Pedido:</strong> #LUMI-{{ successOrder.numeroComprobante || successOrder.id }}</p>
+            <p><strong>Código de Pedido:</strong> #LUMI-{{ getOrderCode(successOrder) }}</p>
             <p><strong>Cliente:</strong> {{ successOrder.clienteNombre }}</p>
-            <p><strong>Total Pagado:</strong> S/ {{ successOrder.totalPagar | number:'1.2-2' }}</p>
-            <p><strong>Destino:</strong> {{ successOrder.direccionReferencia }}</p>
+            <p><strong>Tipo de entrega:</strong> {{ getShippingMethodLabel() }}</p>
+            <p><strong>Subtotal productos:</strong> S/ {{ orderSubtotal | number:'1.2-2' }}</p>
+            <p *ngIf="model.metodoEnvio !== 'RECOJO_TIENDA'"><strong>Dirección y referencia:</strong> {{ model.direccionReferencia }}</p>
+            <p class="order-state-note"><strong>Estado:</strong> Pendiente de pago</p>
           </div>
 
-          <button routerLink="/" class="back-home-btn">Seguir Comprando</button>
+          <div class="success-actions">
+            <button type="button" class="whatsapp-btn" (click)="openWhatsAppCheckout()">Continuar por WhatsApp</button>
+            <button routerLink="/" class="back-home-btn">Seguir Comprando</button>
+          </div>
         </div>
       </div>
     </main>
@@ -326,6 +332,9 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
       color: var(--text-secondary);
       font-size: 15px;
     }
+    .order-state-note {
+      color: #b45309;
+    }
     .order-details {
       background: var(--bg-card);
       width: 100%;
@@ -338,9 +347,13 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
       font-size: 14px;
       border: 1px solid var(--border-color);
     }
-    .back-home-btn {
-      background: var(--primary-base);
-      color: var(--bg-surface);
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .whatsapp-btn, .back-home-btn {
       border: none;
       padding: 14px 28px;
       font-weight: 600;
@@ -351,6 +364,19 @@ import { VentaService, CheckoutRequest, Venta } from '../../../core/services/ven
       cursor: pointer;
       transition: var(--transition-fast);
       text-decoration: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .whatsapp-btn {
+      background: #25d366;
+      color: #fff;
+    }
+    .whatsapp-btn:hover {
+      background: #1fb857;
+    }
+    .back-home-btn {
+      background: var(--primary-base);
+      color: var(--bg-surface);
     }
     .back-home-btn:hover {
       background: var(--primary-hover);
@@ -416,6 +442,10 @@ export class CheckoutComponent implements OnInit {
 
   selectedDpto: string = '';
   selectedProv: string = '';
+  readonly whatsappNumber = '51918413620';
+  orderedItems: CartItemResponse[] = [];
+  orderSubtotal: number = 0;
+  pendingWhatsAppUrl: string = '';
 
   model: CheckoutRequest = {
     clienteNombre: '',
@@ -432,7 +462,6 @@ export class CheckoutComponent implements OnInit {
     private carritoService: CarritoService,
     private ubigeoService: UbigeoService,
     private ventaService: VentaService,
-    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -505,21 +534,111 @@ export class CheckoutComponent implements OnInit {
     const sesionId = this.carritoService.getSessionId();
     if (!this.cart || this.cart.items.length === 0) return;
 
+    const cartSnapshot = this.cart;
     this.submitting = true;
     this.ventaService.checkout(sesionId, this.model).subscribe({
       next: (order) => {
         this.submitting = false;
+        this.orderedItems = cartSnapshot.items.map(item => ({ ...item }));
+        this.orderSubtotal = cartSnapshot.total;
         this.successOrder = order;
+        this.pendingWhatsAppUrl = this.buildWhatsAppUrl(order);
         this.cdr.markForCheck();
-        // Trigger cart state refresh (should clear cart items)
+        this.openWhatsAppCheckout();
         this.carritoService.refreshCart();
       },
       error: (err) => {
         console.error('Error al confirmar checkout', err);
         this.submitting = false;
         this.cdr.markForCheck();
-        alert(err.error?.message || 'Hubo un error al procesar tu pedido. Por favor verifica el stock.');
+        void showErrorAlert('No se pudo registrar el pedido', err.error?.message || 'Hubo un error al procesar tu pedido. Por favor verifica el stock.');
       }
     });
   }
+
+  getOrderCode(order: Venta): number | string {
+    return order.numeroComprobante || order.id || '';
+  }
+
+  getShippingMethodLabel(): string {
+    switch (this.model.metodoEnvio) {
+      case 'RECOJO_TIENDA':
+        return 'Recojo en tienda';
+      case 'ENVIO_PROVINCIA':
+        return 'Envío a provincia';
+      default:
+        return 'Delivery Pucallpa';
+    }
+  }
+
+  openWhatsAppCheckout(): void {
+    if (!this.pendingWhatsAppUrl) return;
+    globalThis.open?.(this.pendingWhatsAppUrl, '_blank');
+  }
+
+  private buildWhatsAppUrl(order: Venta): string {
+    const message = this.buildWhatsAppMessage(order);
+    return `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(message)}`;
+  }
+
+  private buildWhatsAppMessage(order: Venta): string {
+    const lines: string[] = [
+      'Hola, acabo de registrar un pedido en Lumi Store.',
+      '',
+      `Pedido: #LUMI-${this.getOrderCode(order)}`,
+      `Cliente: ${order.clienteNombre}`,
+      `Teléfono: ${order.clienteTelefono}`,
+      '',
+      `Tipo de entrega: ${this.getShippingMethodLabel()}`
+    ];
+
+    if (this.model.metodoEnvio === 'DELIVERY_LOCAL') {
+      lines.push(`Dirección y referencia: ${order.direccionReferencia}`);
+    }
+
+    if (this.model.metodoEnvio === 'ENVIO_PROVINCIA') {
+      lines.push(`Departamento: ${this.getDepartmentName()}`);
+      lines.push(`Provincia: ${this.getProvinceName()}`);
+      lines.push(`Distrito: ${this.getDistrictName(order.ubigeoId)}`);
+      lines.push(`Dirección y referencia: ${order.direccionReferencia}`);
+    }
+
+    lines.push('', 'Productos:');
+    this.orderedItems.forEach(item => {
+      lines.push(`- ${item.productoNombre} / Talla ${item.talla} / Color ${item.color} / Cant. ${item.cantidad}`);
+    });
+
+    lines.push('', `Subtotal: S/ ${this.orderSubtotal.toFixed(2)}`);
+
+    switch (this.model.metodoEnvio) {
+      case 'RECOJO_TIENDA':
+        lines.push('Recojo en tienda sin costo adicional.');
+        break;
+      case 'ENVIO_PROVINCIA':
+        lines.push('📦 Envío nacional por Shalom. El costo final del envío varía según el destino.');
+        break;
+      default:
+        lines.push('Zona céntrica delivery gratis. Otras zonas como Manantay o Yarinacocha tienen costo adicional dependiendo del lugar.');
+        break;
+    }
+
+    lines.push('', 'Quedo atento(a) a los datos para realizar el pago por Yape o transferencia.');
+
+    return lines.join('\n');
+  }
+
+  private getDepartmentName(): string {
+    const ubigeo = this.ubigeos.find(u => u.coddpto === this.selectedDpto && u.codprov === '00' && u.coddist === '00');
+    return ubigeo?.nombre || '';
+  }
+
+  private getProvinceName(): string {
+    const ubigeo = this.provincias.find(u => u.codprov === this.selectedProv);
+    return ubigeo?.nombre || '';
+  }
+
+  private getDistrictName(ubigeoId: string): string {
+    return this.ubigeos.find(u => u.id === ubigeoId)?.nombre || '';
+  }
 }
+
