@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken?: string;
   user: any;
   csrfToken?: string;
 }
@@ -29,12 +30,16 @@ export class AuthService {
         if (response && response.accessToken) {
           localStorage.setItem('lumi_admin_token', response.accessToken);
         }
+        if (response && response.refreshToken) {
+          localStorage.setItem('lumi_admin_refresh_token', response.refreshToken);
+        }
       })
     );
   }
 
   logout(): void {
     localStorage.removeItem('lumi_admin_token');
+    localStorage.removeItem('lumi_admin_refresh_token');
   }
 
   isLoggedIn(): boolean {
@@ -43,5 +48,29 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem('lumi_admin_token');
+  }
+
+  refreshSession(): Observable<AuthResponse> {
+    const refreshToken = localStorage.getItem('lumi_admin_refresh_token');
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${environment.insforgeAppKey}`,
+      'Content-Type': 'application/json'
+    });
+
+    const refreshUrl = `${environment.insforgeApiBaseUrl}/api/auth/refresh`;
+    return this.http.post<AuthResponse>(refreshUrl, { refreshToken }, { headers }).pipe(
+      tap(response => {
+        if (response && response.accessToken) {
+          localStorage.setItem('lumi_admin_token', response.accessToken);
+        }
+        if (response && response.refreshToken) {
+          localStorage.setItem('lumi_admin_refresh_token', response.refreshToken);
+        }
+      })
+    );
   }
 }

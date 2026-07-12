@@ -34,3 +34,16 @@ export function showWarningAlert(title: string, text: string) {
     text
   });
 }
+
+export function showConfirmAlert(title: string, text: string) {
+  return Swal.fire({
+    ...baseOptions,
+    icon: 'warning',
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, confirmar',
+    cancelButtonText: 'No, cancelar',
+    cancelButtonColor: '#ef4444'
+  });
+}

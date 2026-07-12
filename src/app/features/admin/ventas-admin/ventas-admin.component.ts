@@ -5,7 +5,7 @@ import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/
 import { VentaService, Venta, AdminCheckoutRequest, VentaFilters } from '../../../core/services/venta.service';
 import { ProductoService, Producto, VarianteProducto } from '../../../core/services/producto.service';
 import { UbigeoService, Ubigeo } from '../../../core/services/ubigeo.service';
-import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../shared/utils/swal.helper';
+import { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-ventas-admin',
@@ -111,6 +111,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                       <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                      <button type="button" *ngIf="v.estado !== 'cancelado'" (click)="updateStatus(v.id!, 'cancelado')" class="btn-cancel-link" title="Eliminar/Cancelar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="cancel-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
                       </button>
                     </div>
@@ -222,6 +227,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                         </svg>
                       </button>
+                      <button type="button" *ngIf="v.estado !== 'cancelado'" (click)="updateStatus(v.id!, 'cancelado')" class="btn-cancel-link" title="Eliminar/Cancelar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="cancel-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
                     </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
@@ -331,6 +341,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                         </svg>
                       </button>
+                      <button type="button" *ngIf="v.estado !== 'cancelado'" (click)="updateStatus(v.id!, 'cancelado')" class="btn-cancel-link" title="Eliminar/Cancelar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="cancel-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
                     </div>
                     <span class="card-date">{{ v.fecha | date:'dd/MM HH:mm' }}</span>
                   </div>
@@ -438,6 +453,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                       <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                      <button type="button" *ngIf="v.estado !== 'cancelado'" (click)="updateStatus(v.id!, 'cancelado')" class="btn-cancel-link" title="Eliminar/Cancelar Venta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="cancel-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
                       </button>
                     </div>
@@ -581,10 +601,15 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                       <td>
                         <span class="table-status-pill" [ngClass]="v.estado">{{ v.estado }}</span>
                       </td>
-                      <td>
+                      <td style="display: flex; gap: 8px; align-items: center;">
                         <button type="button" (click)="openEditSaleModal(v)" class="btn-edit-link" title="Editar Venta">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="edit-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                          </svg>
+                        </button>
+                        <button type="button" *ngIf="v.estado !== 'cancelado'" (click)="updateStatus(v.id!, 'cancelado')" class="btn-cancel-link" title="Eliminar/Cancelar Venta">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="cancel-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                           </svg>
                         </button>
                       </td>
@@ -597,8 +622,8 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
         </div>
 
         <!-- ================= MODAL: REGISTRAR VENTA MANUAL ================= -->
-        <div class="modal-overlay" *ngIf="showCreateSaleModal" (click)="closeCreateSaleModal()">
-          <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-overlay" *ngIf="showCreateSaleModal">
+          <div class="modal modal-lg">
             <h3>{{ isEditMode && editingVenta ? 'Editar Venta: ' + getDisplayCode(editingVenta) : 'Registrar Nueva Venta Manual' }}</h3>
             
             <form (submit)="submitManualSale()" class="modal-form">
@@ -645,14 +670,14 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                       <div class="form-group">
                         <label>Departamento</label>
-                        <select [(ngModel)]="selectedDpto" (change)="onDptoChange()" name="mDpto" required class="filter-select w-full">
+                        <select [(ngModel)]="selectedDpto" (change)="onDptoChange()" name="mDpto" class="filter-select w-full">
                           <option value="" disabled selected>Departamento</option>
                           <option *ngFor="let d of departamentos" [value]="d.coddpto">{{ d.nombre }}</option>
                         </select>
                       </div>
                       <div class="form-group">
                         <label>Provincia</label>
-                        <select [(ngModel)]="selectedProv" (change)="onProvChange()" [disabled]="!selectedDpto" name="mProv" required class="filter-select w-full">
+                        <select [(ngModel)]="selectedProv" (change)="onProvChange()" [disabled]="!selectedDpto" name="mProv" class="filter-select w-full">
                           <option value="" disabled selected>Provincia</option>
                           <option *ngFor="let p of provincias" [value]="p.codprov">{{ p.nombre }}</option>
                         </select>
@@ -660,7 +685,7 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
                     </div>
                     <div class="form-group">
                       <label>Distrito (Envío)</label>
-                      <select [(ngModel)]="saleForm.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" name="mUbigeoId" required class="filter-select w-full">
+                      <select [(ngModel)]="saleForm.ubigeoId" (change)="onDistChange()" [disabled]="!selectedProv" name="mUbigeoId" class="filter-select w-full">
                         <option value="" disabled selected>Selecciona distrito</option>
                         <option *ngFor="let di of distritos" [value]="di.id">
                           {{ di.nombre }}
@@ -671,11 +696,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
 
                   <div class="form-group" *ngIf="saleForm.metodoEnvio !== 'RECOJO_TIENDA'">
                     <label>Costo Delivery (S/)</label>
-                    <input type="number" step="0.01" [(ngModel)]="saleForm.costoDelivery" name="mCostoDelivery" required class="filter-input w-full" />
+                    <input type="number" step="0.01" [(ngModel)]="saleForm.costoDelivery" name="mCostoDelivery" class="filter-input w-full" />
                   </div>
                   <div class="form-group" *ngIf="saleForm.metodoEnvio !== 'RECOJO_TIENDA'">
                     <label>Dirección y Referencia</label>
-                    <textarea [(ngModel)]="saleForm.direccionReferencia" name="mDireccion" required rows="2" placeholder="Ej: Av. Larco 123 Dpto 401" class="filter-input w-full textarea-field"></textarea>
+                    <textarea [(ngModel)]="saleForm.direccionReferencia" name="mDireccion" rows="2" placeholder="Ej: Av. Larco 123 Dpto 401" class="filter-input w-full textarea-field"></textarea>
                   </div>
                   <div class="form-group">
                     <label>Fecha de envío programada</label>
@@ -771,7 +796,7 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
               
               <div class="modal-actions-row">
                 <button type="button" (click)="closeCreateSaleModal()" class="btn-secondary">Cancelar</button>
-                <button type="submit" [disabled]="saleItems.length === 0 || submittingSale" class="action-btn">
+                <button type="submit" [disabled]="submittingSale" class="action-btn">
                   {{ submittingSale ? 'Procesando...' : (isEditMode ? 'Actualizar Pedido' : 'Registrar Pedido') }}
                 </button>
               </div>
@@ -1010,6 +1035,24 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
     }
     .edit-icon:hover {
       color: var(--admin-accent);
+    }
+    .btn-cancel-link {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      line-height: 1;
+    }
+    .cancel-icon {
+      width: 14px;
+      height: 14px;
+      color: #ef4444;
+      transition: var(--transition-fast);
+    }
+    .cancel-icon:hover {
+      color: #dc2626;
     }
     .card-code {
       font-size: 14px;
@@ -1317,7 +1360,9 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert } from '../../../sha
       background: rgba(0, 0, 0, 0.6);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
       z-index: 300;
     }
     .modal {
@@ -1835,6 +1880,23 @@ export class VentasAdminComponent implements OnInit {
   }
 
   updateStatus(id: number, newStatus: string): void {
+    if (newStatus === 'cancelado') {
+      void showConfirmAlert(
+        '¿Estás seguro de eliminar esta venta?',
+        'Se devolverá este artículo al stock.'
+      ).then((result) => {
+        if (result.isConfirmed) {
+          this.executeStatusUpdate(id, newStatus);
+        } else {
+          this.loadVentas(); // Revert UI/select element state
+        }
+      });
+      return;
+    }
+    this.executeStatusUpdate(id, newStatus);
+  }
+
+  private executeStatusUpdate(id: number, newStatus: string): void {
     this.ventaService.updateVentaStatus(id, newStatus).subscribe({
       next: (updated) => {
         console.log(`Estado de venta #${id} actualizado a ${newStatus}`);
@@ -2125,7 +2187,16 @@ export class VentasAdminComponent implements OnInit {
   }
 
   submitManualSale(): void {
-    if (this.saleItems.length === 0) return;
+    // Validar campos obligatorios
+    if (!this.saleForm.clienteNombre || !this.saleForm.clienteNombre.trim() ||
+        !this.saleForm.clienteTelefono || !this.saleForm.clienteTelefono.trim() ||
+        this.saleItems.length === 0) {
+      void showWarningAlert(
+        'Campos obligatorios',
+        'Debe rellenar el Nombre, el Teléfono del cliente y agregar al menos un Producto al pedido.'
+      );
+      return;
+    }
     
     this.submittingSale = true;
     

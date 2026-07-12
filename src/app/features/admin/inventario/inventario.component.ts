@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } from '../../../core/services/producto.service';
+import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../shared/utils/swal.helper';
 
 @Component({
   selector: 'app-inventario',
@@ -53,27 +54,29 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
                     <td colspan="5" class="empty-row">No hay productos creados.</td>
                   </tr>
                   <ng-container *ngFor="let p of productos">
-                    <tr>
+                    <tr [class.deactivated-row]="p.estado === false">
                       <td>
-                        <img [src]="p.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&auto=format&fit=crop'" [alt]="p.nombre" class="thumb" />
+                        <img [src]="p.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&auto=format&fit=crop'" [alt]="p.nombre" class="thumb" [class.dimmed]="p.estado === false" />
                       </td>
                       <td>
-                        <strong>{{ p.nombre }}</strong>
-                        <div class="desc-short">{{ p.descripcion }}</div>
+                        <strong [class.dimmed]="p.estado === false">{{ p.nombre }}</strong>
+                        <span *ngIf="p.estado === false" class="badge-deactivated">DESACTIVADO</span>
+                        <div class="desc-short" [class.dimmed]="p.estado === false">{{ p.descripcion }}</div>
                       </td>
                       <td>
-                        <div>{{ getCategoryName(p.categoriaId) }}</div>
-                        <small *ngIf="p.subcategoriaId" class="text-xs" style="color: var(--admin-text-secondary); display: block; margin-top: 2px;">
+                        <div [class.dimmed]="p.estado === false">{{ getCategoryName(p.categoriaId) }}</div>
+                        <small *ngIf="p.subcategoriaId" class="text-xs" style="color: var(--admin-text-secondary); display: block; margin-top: 2px;" [class.dimmed]="p.estado === false">
                           ↳ {{ getSubcategoryName(p.subcategoriaId) }}
                         </small>
                       </td>
-                      <td>S/ {{ p.precioBase | number:'1.2-2' }}</td>
+                      <td [class.dimmed]="p.estado === false">S/ {{ p.precioBase | number:'1.2-2' }}</td>
                       <td class="action-cells">
                         <button (click)="toggleProductExpand(p)" class="btn-secondary">
                           {{ expandedProducts[p.id!] ? 'Ocultar stock' : 'Ver stock' }}
                         </button>
                         <button (click)="openProductModal(p)" class="btn-edit">Editar</button>
-                        <button (click)="deleteProducto(p.id!)" class="btn-delete">Eliminar</button>
+                        <button *ngIf="p.estado !== false" (click)="deleteProducto(p.id!)" class="btn-delete">Eliminar</button>
+                        <button *ngIf="p.estado === false" (click)="activateProducto(p)" class="btn-activate">Activar</button>
                       </td>
                     </tr>
                     <tr *ngIf="expandedProducts[p.id!]">
@@ -222,8 +225,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
       </main>
 
       <!-- ================= MODAL: CATEGORIA ================= -->
-      <div class="modal-overlay" *ngIf="showCategoryModal" (click)="closeCategoryModal()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-overlay" *ngIf="showCategoryModal">
+        <div class="modal">
           <h3>{{ editingCategory?.id ? 'Editar Categoría' : 'Nueva Categoría' }}</h3>
           <form (submit)="saveCategory()" class="modal-form">
             <div class="form-group">
@@ -247,8 +250,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
       </div>
 
       <!-- ================= MODAL: SUBCATEGORIA ================= -->
-      <div class="modal-overlay" *ngIf="showSubcategoryModal" (click)="closeSubcategoryModal()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-overlay" *ngIf="showSubcategoryModal">
+        <div class="modal">
           <h3>{{ editingSubcategory?.id ? 'Editar Subcategoría' : 'Nueva Subcategoría' }}</h3>
           <p style="font-size: 13px; color: var(--admin-text-secondary); margin-top: -16px; margin-bottom: 20px;">
             Asociada a la categoría: <strong>{{ selectedCategoryForSubcategory?.nombre }}</strong>
@@ -275,8 +278,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
       </div>
 
       <!-- ================= MODAL: PRODUCTO ================= -->
-      <div class="modal-overlay" *ngIf="showProductModal" (click)="closeProductModal()">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-overlay" *ngIf="showProductModal">
+        <div class="modal">
           <h3>{{ editingProduct?.id ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
           <form (submit)="saveProduct()" class="modal-form">
             <div class="form-group">
@@ -320,8 +323,8 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
       </div>
 
       <!-- ================= MODAL: VARIANTES ================= -->
-      <div class="modal-overlay" *ngIf="showVariantsModal" (click)="closeVariantsModal()">
-        <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-overlay" *ngIf="showVariantsModal">
+        <div class="modal modal-lg">
           <h3>Gestionar Variantes y Stock: {{ selectedProductForVariants?.nombre }}</h3>
           
           <div class="variant-management-layout">
@@ -571,6 +574,38 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
     .btn-delete:hover {
       background: rgba(239, 68, 68, 0.2);
     }
+    .btn-activate {
+      border: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: var(--transition-fast);
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+    .btn-activate:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+    .dimmed {
+      opacity: 0.5;
+    }
+    .badge-deactivated {
+      margin-left: 8px;
+      font-size: 10px;
+      background: #e0e0e0;
+      color: #666;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .deactivated-row {
+      background: rgba(0, 0, 0, 0.01);
+    }
     .empty-row {
       text-align: center;
       color: var(--admin-text-secondary);
@@ -585,7 +620,9 @@ import { ProductoService, Producto, Categoria, VarianteProducto, Subcategoria } 
       background: rgba(0, 0, 0, 0.6);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
       z-index: 300;
     }
     .modal {
@@ -908,7 +945,7 @@ export class InventarioComponent implements OnInit {
               this.categorySubcategoriasMap[s.categoriaId].push(s);
             });
 
-            this.productoService.getProductos().subscribe({
+            this.productoService.getAdminProductos().subscribe({
               next: (prods) => {
                 this.productos = prods;
                 this.loading = false;
@@ -978,12 +1015,20 @@ export class InventarioComponent implements OnInit {
   }
 
   deleteCategoria(id: number): void {
-    if (confirm('¿Estás seguro de eliminar esta categoría?')) {
-      this.productoService.deleteCategoria(id).subscribe({
-        next: () => this.loadData(),
-        error: (err) => console.error('Error al eliminar categoría', err)
-      });
-    }
+    void showConfirmAlert('¿Estás seguro de eliminar esta categoría?', 'Esta acción no se puede deshacer.').then((result) => {
+      if (result.isConfirmed) {
+        this.productoService.deleteCategoria(id).subscribe({
+          next: () => {
+            void showSuccessAlert('Eliminada', 'La categoría ha sido eliminada con éxito.');
+            this.loadData();
+          },
+          error: (err) => {
+            console.error('Error al eliminar categoría', err);
+            void showErrorAlert('Error', 'No se pudo eliminar la categoría.');
+          }
+        });
+      }
+    });
   }
 
   // Product Modal
@@ -1026,12 +1071,44 @@ export class InventarioComponent implements OnInit {
   }
 
   deleteProducto(id: number): void {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      this.productoService.deleteProducto(id).subscribe({
-        next: () => this.loadData(),
-        error: (err) => console.error('Error al eliminar producto', err)
-      });
-    }
+    void showConfirmAlert(
+      '¿Estás seguro de eliminar este producto?',
+      'Este producto ya no aparecerá para los clientes en la tienda, pero seguirá existiendo en el historial y registros del administrador.'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        this.productoService.deleteProducto(id).subscribe({
+          next: () => {
+            void showSuccessAlert('Desactivado', 'El producto ha sido desactivado con éxito.');
+            this.loadData();
+          },
+          error: (err) => {
+            console.error('Error al desactivar producto', err);
+            void showErrorAlert('Error', 'No se pudo desactivar el producto.');
+          }
+        });
+      }
+    });
+  }
+
+  activateProducto(prod: Producto): void {
+    void showConfirmAlert(
+      '¿Estás seguro de activar este producto?',
+      'El producto volverá a aparecer para los clientes en la tienda.'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        const updated = { ...prod, estado: true };
+        this.productoService.updateProducto(updated).subscribe({
+          next: () => {
+            void showSuccessAlert('Activado', 'El producto ha sido activado con éxito.');
+            this.loadData();
+          },
+          error: (err) => {
+            console.error('Error al activar producto', err);
+            void showErrorAlert('Error', 'No se pudo activar el producto.');
+          }
+        });
+      }
+    });
   }
 
   // Variants Modal
@@ -1170,12 +1247,20 @@ export class InventarioComponent implements OnInit {
   }
 
   deleteVariant(id: number): void {
-    if (confirm('¿Estás seguro de eliminar esta variante?')) {
-      this.productoService.deleteVariante(id).subscribe({
-        next: () => this.loadVariantsForSelectedProduct(),
-        error: (err) => console.error('Error al eliminar variante', err)
-      });
-    }
+    void showConfirmAlert('¿Estás seguro de eliminar esta variante?', 'Esta acción no se puede deshacer y afectará el stock.').then((result) => {
+      if (result.isConfirmed) {
+        this.productoService.deleteVariante(id).subscribe({
+          next: () => {
+            void showSuccessAlert('Eliminada', 'La variante ha sido eliminada con éxito.');
+            this.loadVariantsForSelectedProduct();
+          },
+          error: (err) => {
+            console.error('Error al eliminar variante', err);
+            void showErrorAlert('Error', 'No se pudo eliminar la variante.');
+          }
+        });
+      }
+    });
   }
 
   getSubcategoryName(subId: number): string {
@@ -1243,11 +1328,19 @@ export class InventarioComponent implements OnInit {
   }
 
   deleteSubcategory(id: number, catId: number): void {
-    if (confirm('¿Estás seguro de eliminar esta subcategoría?')) {
-      this.productoService.deleteSubcategoria(id).subscribe({
-        next: () => this.loadData(),
-        error: (err) => console.error('Error al eliminar subcategoría', err)
-      });
-    }
+    void showConfirmAlert('¿Estás seguro de eliminar esta subcategoría?', 'Esta acción no se puede deshacer.').then((result) => {
+      if (result.isConfirmed) {
+        this.productoService.deleteSubcategoria(id).subscribe({
+          next: () => {
+            void showSuccessAlert('Eliminada', 'La subcategoría ha sido eliminada con éxito.');
+            this.loadData();
+          },
+          error: (err) => {
+            console.error('Error al eliminar subcategoría', err);
+            void showErrorAlert('Error', 'No se pudo eliminar la subcategoría.');
+          }
+        });
+      }
+    });
   }
 }

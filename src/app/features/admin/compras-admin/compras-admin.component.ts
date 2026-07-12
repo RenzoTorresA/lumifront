@@ -68,8 +68,8 @@ import { showErrorAlert, showSuccessAlert } from '../../../shared/utils/swal.hel
         </div>
 
         <!-- ================= MODAL: REGISTRAR COMPRA MANUAL ================= -->
-        <div class="modal-overlay" *ngIf="showCreateCompraModal" (click)="closeCreateCompraModal()">
-          <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-overlay" *ngIf="showCreateCompraModal">
+          <div class="modal modal-lg">
             <h3>Registrar Ingreso / Compra de Mercadería</h3>
             
             <form (submit)="submitManualCompra()" class="modal-form">
@@ -283,7 +283,9 @@ import { showErrorAlert, showSuccessAlert } from '../../../shared/utils/swal.hel
       background: rgba(0, 0, 0, 0.6);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
       z-index: 300;
     }
     .modal {
