@@ -27,6 +27,7 @@ export interface Producto {
   precioBase: number;
   imagenGeneralUrl?: string;
   fechaCreacion?: string;
+  estado?: boolean;
 }
 
 export interface VarianteProducto {
@@ -123,6 +124,20 @@ export class ProductoService {
   }
 
   // Admin Products
+  getAdminProductos(categoriaId?: number, subcategoriaId?: number, search?: string): Observable<Producto[]> {
+    let params = new HttpParams();
+    if (categoriaId) {
+      params = params.set('categoriaId', categoriaId.toString());
+    }
+    if (subcategoriaId) {
+      params = params.set('subcategoriaId', subcategoriaId.toString());
+    }
+    if (search) {
+      params = params.set('search', search);
+    }
+    return this.http.get<Producto[]>(`${this.adminUrl}/productos`, { params });
+  }
+
   createProducto(producto: Producto): Observable<Producto> {
     return this.http.post<Producto>(`${this.adminUrl}/productos`, producto);
   }
