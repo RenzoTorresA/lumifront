@@ -10,7 +10,7 @@ import { CarritoService, CartResponse, CartItemResponse } from '../../../core/se
   template: `
     <header class="header">
       <div class="header-container">
-        <a routerLink="/" class="logo">LUMI</a>
+        <a routerLink="/" class="logo">Lumi</a>
         
         <nav class="nav">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Colecciones</a>
@@ -29,10 +29,13 @@ import { CarritoService, CartResponse, CartItemResponse } from '../../../core/se
     </header>
   `,
   styles: [`
-    .header {
+    :host {
       position: sticky;
       top: 0;
       z-index: 100;
+      display: block;
+    }
+    .header {
       background: rgba(252, 251, 250, 0.85);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-color);
@@ -48,12 +51,11 @@ import { CarritoService, CartResponse, CartItemResponse } from '../../../core/se
       align-items: center;
     }
     .logo {
-      font-family: var(--font-heading);
-      font-size: 24px;
-      font-weight: 800;
+      font-family: var(--font-cursive);
+      font-size: 38px;
+      font-weight: 400;
       color: var(--text-primary);
       text-decoration: none;
-      letter-spacing: 0.1em;
     }
     .nav {
       display: flex;

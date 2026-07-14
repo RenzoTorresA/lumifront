@@ -10,4 +10,26 @@
   
   <!-- Shopping Cart Slide-out Drawer -->
   <app-carrito [isOpen]="cartOpen" (closeCart)="cartOpen = false"></app-carrito>
+
+  <!-- Floating Action Buttons (WhatsApp & Scroll to Top) -->
+  <div class="floating-actions" *ngIf="!isAdminRoute">
+    <!-- WhatsApp FAB -->
+    <a href="https://wa.me/51918413620?text=Hola!%20Me%20gustar%C3%ADa%20hacer%20una%20consulta%20sobre%20sus%20productos." 
+       target="_blank" 
+       class="float-btn whatsapp-float" 
+       title="Contactar por WhatsApp">
+      <svg viewBox="0 0 24 24" fill="currentColor" class="icon-whatsapp">
+        <path d="M12.031 2c-5.514 0-9.99 4.476-9.99 9.99 0 2.08.636 4.017 1.733 5.626L2.013 23l5.525-1.45c1.558.946 3.385 1.49 5.333 1.49 5.514 0 9.99-4.476 9.99-9.99S17.545 2 12.031 2zm0 1.662c4.582 0 8.328 3.74 8.328 8.328 0 4.582-3.74 8.328-8.328 8.328-1.785 0-3.44-.567-4.795-1.528l-.344-.244-3.262.856.872-3.181-.27-.43c-1.026-1.634-1.616-3.565-1.616-5.631 0-4.582 3.74-8.328 8.328-8.328zm-3.805 3.327c-.201 0-.43.08-.62.278-.201.201-.767.75-.767 1.831 0 1.08.788 2.126.9 2.277.11.151 1.543 2.355 3.738 3.303 2.195.947 2.195.63 2.595.592.4-.038 1.292-.527 1.472-1.033.18-.506.18-.94.126-1.033-.054-.092-.2-.15-.42-.26-.22-.11-1.292-.638-1.492-.71-.2-.072-.344-.11-.49.11-.144.22-.556.71-.68.854-.126.144-.251.162-.471.052-.22-.11-.929-.342-1.77-1.093-.655-.584-1.096-1.306-1.225-1.527-.128-.221-.013-.34.097-.45.099-.1.22-.26.33-.39.11-.13.144-.22.22-.366.076-.147.038-.275-.02-.385-.058-.11-.49-1.181-.67-1.62-.176-.424-.352-.366-.49-.373-.127-.006-.275-.008-.423-.008z"/>
+      </svg>
+    </a>
+    <!-- Scroll to Top FAB -->
+    <button (click)="scrollToTop()" 
+            class="float-btn scroll-float" 
+            [class.visible]="showScrollBtn" 
+            title="Ir arriba">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="icon-arrow">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+      </svg>
+    </button>
+  </div>
 </div>

@@ -33,7 +33,7 @@ import { showErrorAlert } from '../../../shared/utils/swal.helper';
           <p class="price">
             S/ {{ (selectedVariant && selectedVariant.precio) ? (selectedVariant.precio | number:'1.2-2') : (producto.precioBase | number:'1.2-2') }}
           </p>
-          <p class="description" *ngIf="producto.descripcion">{{ producto.descripcion }}</p>
+          <p class="description" *ngIf="producto.descripcion" [innerHTML]="getFormattedDescription(producto.descripcion)"></p>
 
           <!-- Configuration options -->
           <div class="config-panel">
@@ -190,6 +190,7 @@ import { showErrorAlert } from '../../../shared/utils/swal.helper';
       color: var(--text-secondary);
       font-size: 15px;
       line-height: 1.7;
+      white-space: pre-wrap;
     }
     .config-panel {
       display: flex;
@@ -372,6 +373,11 @@ export class DetalleProductoComponent implements OnInit {
 
   adding: boolean = false;
   added: boolean = false;
+
+  getFormattedDescription(desc: string | undefined): string {
+    if (!desc) return '';
+    return desc.replace(/\r?\n|\\n/g, '<br>');
+  }
 
   constructor(
     private route: ActivatedRoute,

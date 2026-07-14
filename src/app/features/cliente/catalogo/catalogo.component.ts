@@ -13,8 +13,48 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       <!-- Hero Banner -->
       <section class="hero">
         <div class="hero-content">
+          <span class="hero-badge">Colección 2026</span>
           <h1>Colección Lumi Store</h1>
           <p>El balance perfecto entre tendencia, comodidad y originalidad. Descubre lo nuevo que tenemos para renovar tu look.</p>
+          <a (click)="scrollToProducts()" class="explore-link">
+            Explorar catálogo <span class="arrow">↓</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Benefits / Trust Bar -->
+      <section class="benefits-bar">
+        <div class="benefit-item">
+          <svg class="benefit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="15" height="13"></rect>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+          </svg>
+          <div class="benefit-text">
+            <strong>Envíos a todo el Perú</strong>
+            <span>Coordinación rápida y segura</span>
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <svg class="benefit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <div class="benefit-text">
+            <strong>Soporte 24/7</strong>
+            <span>Atención directa por WhatsApp</span>
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <svg class="benefit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <div class="benefit-text">
+            <strong>Calidad Premium</strong>
+            <span>Telas seleccionadas con amor</span>
+          </div>
         </div>
       </section>
 
@@ -68,7 +108,7 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
           </div>
 
           <div *ngIf="!loading" class="products-grid">
-            <article *ngFor="let prod of productos" class="product-card" [routerLink]="['/producto', prod.id]">
+            <article *ngFor="let prod of paginatedProductos" class="product-card" [routerLink]="['/producto', prod.id]">
               <div class="img-wrapper">
                 <img [src]="prod.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'" [alt]="prod.nombre" />
                 <span class="view-overlay">Ver Detalle</span>
@@ -78,6 +118,25 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
                 <p class="price">S/ {{ prod.precioBase | number:'1.2-2' }}</p>
               </div>
             </article>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="pagination" *ngIf="!loading && totalPages > 1">
+            <button (click)="prevPage()" [disabled]="currentPage === 1" class="page-btn arrow-btn">
+              ← Anterior
+            </button>
+            
+            <button 
+              *ngFor="let page of pagesArray" 
+              (click)="setPage(page)" 
+              [class.active]="currentPage === page" 
+              class="page-btn">
+              {{ page }}
+            </button>
+            
+            <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="page-btn arrow-btn">
+              Siguiente →
+            </button>
           </div>
         </section>
       </div>
@@ -90,23 +149,130 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       padding: 0 24px;
     }
     .hero {
-      background: linear-gradient(135deg, #f7f6f2 0%, #eae7e0 100%);
+      position: relative;
+      background: linear-gradient(90deg, rgba(28, 26, 23, 0.8) 0%, rgba(28, 26, 23, 0.4) 60%, rgba(28, 26, 23, 0.15) 100%), url('/image1.png') no-repeat center center / cover;
       border-radius: var(--radius-lg);
-      padding: 60px 40px;
+      padding: 80px 60px;
       margin-bottom: 40px;
       display: flex;
       align-items: center;
+      min-height: 480px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .hero-content {
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent-base);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(197, 168, 128, 0.3);
+      margin-bottom: 8px;
+      backdrop-filter: blur(4px);
     }
     .hero-content h1 {
-      font-size: 40px;
+      font-size: 38px;
       font-weight: 800;
-      margin-bottom: 12px;
+      color: #ffffff;
+      margin: 0;
       letter-spacing: -0.03em;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     .hero-content p {
-      color: var(--text-secondary);
+      color: #eae7e0;
       font-size: 16px;
-      max-width: 480px;
+      max-width: 520px;
+      margin: 0;
+      line-height: 1.6;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    .explore-link {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 16px;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      gap: 6px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    .explore-link:hover {
+      color: var(--accent-base);
+    }
+    .explore-link .arrow {
+      transition: var(--transition-fast);
+      display: inline-block;
+    }
+    .explore-link:hover .arrow {
+      transform: translateY(4px);
+    }
+    .benefits-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+    .benefit-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .benefit-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--accent-base);
+      flex-shrink: 0;
+    }
+    .benefit-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .benefit-text strong {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .benefit-text span {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    @media (max-width: 768px) {
+      .hero {
+        padding: 40px 24px;
+        min-height: 200px;
+        background-image: linear-gradient(0deg, rgba(28, 26, 23, 0.75) 0%, rgba(28, 26, 23, 0.5) 100%), url('/image.png');
+      }
+      .hero-content h1 {
+        font-size: 28px;
+      }
+      .hero-content p {
+        font-size: 14px;
+        max-width: 100%;
+      }
+      .benefits-bar {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 20px;
+      }
     }
     .layout {
       display: grid;
@@ -302,6 +468,43 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       border-radius: var(--radius-md);
       border: 1px dashed var(--border-color);
     }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+    }
+    .page-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--text-primary);
+      background: var(--bg-card);
+    }
+    .page-btn.active {
+      background: var(--primary-base);
+      color: var(--bg-surface);
+      border-color: var(--primary-base);
+    }
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .arrow-btn {
+      font-weight: 700;
+    }
   `]
 })
 export class CatalogoComponent implements OnInit {
@@ -313,10 +516,27 @@ export class CatalogoComponent implements OnInit {
   searchTerm: string = '';
   loading: boolean = true;
 
+  // Pagination
+  currentPage: number = 1;
+  pageSize: number = 6;
+
+  get paginatedProductos(): Producto[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.productos.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.productos.length / this.pageSize);
+  }
+
+  get pagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
   constructor(
     private productoService: ProductoService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCategorias();
@@ -327,7 +547,7 @@ export class CatalogoComponent implements OnInit {
     this.productoService.getActiveCategorias().subscribe({
       next: (data) => {
         this.categorias = data;
-        
+
         this.productoService.getActiveSubcategorias().subscribe({
           next: (subs) => {
             this.subcategorias = subs;
@@ -363,6 +583,7 @@ export class CatalogoComponent implements OnInit {
   selectCategory(categoryId: number | null): void {
     this.selectedCategory = categoryId;
     this.selectedSubcategory = null;
+    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
   }
 
@@ -375,6 +596,7 @@ export class CatalogoComponent implements OnInit {
         this.selectedCategory = sub.categoriaId;
       }
     }
+    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
   }
 
@@ -383,6 +605,31 @@ export class CatalogoComponent implements OnInit {
   }
 
   onFilterChange(): void {
+    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
+  }
+
+  scrollToProducts(): void {
+    const element = document.querySelector('.layout');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  setPage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    const element = document.querySelector('.layout');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  nextPage(): void {
+    this.setPage(this.currentPage + 1);
+  }
+
+  prevPage(): void {
+    this.setPage(this.currentPage - 1);
   }
 }
