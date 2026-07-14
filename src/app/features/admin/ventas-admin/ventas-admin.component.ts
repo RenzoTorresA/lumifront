@@ -2059,9 +2059,11 @@ export class VentasAdminComponent implements OnInit {
 
   onDistChange(): void {
     if (this.saleForm.ubigeoId && this.saleForm.metodoEnvio === 'ENVIO_PROVINCIA') {
+      this.saleForm.costoDelivery = 0;
+    } else if (this.saleForm.ubigeoId) {
       const ubigeo = this.ubigeos.find(u => u.id === this.saleForm.ubigeoId);
       if (ubigeo) {
-        this.saleForm.costoDelivery = ubigeo.precioDelivery;
+        this.saleForm.costoDelivery = Number(ubigeo.precioDelivery);
       }
     }
     this.cdr.markForCheck();

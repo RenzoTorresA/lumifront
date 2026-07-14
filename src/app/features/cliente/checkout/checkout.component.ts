@@ -525,8 +525,12 @@ export class CheckoutComponent implements OnInit {
   }
 
   onDistChange(): void {
-    const selected = this.distritos.find(u => u.id === this.model.ubigeoId);
-    this.selectedDeliveryFee = selected ? selected.precioDelivery : 0;
+    if (this.model.metodoEnvio === 'ENVIO_PROVINCIA') {
+      this.selectedDeliveryFee = 0;
+    } else {
+      const selected = this.distritos.find(u => u.id === this.model.ubigeoId);
+      this.selectedDeliveryFee = selected ? Number(selected.precioDelivery) : 0;
+    }
     this.cdr.markForCheck();
   }
 
