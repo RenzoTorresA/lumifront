@@ -139,6 +139,60 @@ import { AuthService } from '../../../core/services/auth.service';
     .logout-btn:hover {
       background: rgba(239, 68, 68, 0.1);
     }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--admin-border-color);
+      }
+      .sidebar-header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        border-bottom: none;
+      }
+      .logo-back {
+        margin-bottom: 0;
+      }
+      .sidebar-footer {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        padding: 0;
+        border-top: none;
+      }
+      .logout-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .sidebar-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 8px 16px;
+        border-top: 1px solid var(--admin-border-color);
+        gap: 8px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .sidebar-nav::-webkit-scrollbar {
+        display: none;
+      }
+      .nav-item {
+        padding: 8px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        border-left: none !important;
+        border-radius: var(--radius-md);
+      }
+      .nav-item.active {
+        border-bottom: 3px solid var(--admin-accent);
+        border-radius: 0;
+        background: none;
+      }
+    }
   `]
 })
 export class AdminSidebarComponent {
