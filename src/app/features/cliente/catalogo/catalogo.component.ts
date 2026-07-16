@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -120,23 +120,25 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
             </article>
           </div>
 
-          <!-- Pagination Controls -->
-          <div class="pagination" *ngIf="!loading && totalPages > 1">
-            <button (click)="prevPage()" [disabled]="currentPage === 1" class="page-btn arrow-btn">
-              ← Anterior
-            </button>
+          <!-- Dynamic Pagination Controls -->
+          <div class="dynamic-pagination-container" *ngIf="!loading">
+            <!-- Spinner for loading more -->
+            <div *ngIf="loadingMore" class="loading-more-spinner animate-fade-in">
+              <span class="mini-loader"></span>
+              <p>Cargando más prendas...</p>
+            </div>
+
+            <!-- Ver más Button -->
+            <div *ngIf="showLoadMoreButton && visibleCount < productos.length" class="load-more-action">
+              <button (click)="loadMoreManually()" class="btn-ver-mas">
+                Ver más
+              </button>
+            </div>
             
-            <button 
-              *ngFor="let page of pagesArray" 
-              (click)="setPage(page)" 
-              [class.active]="currentPage === page" 
-              class="page-btn">
-              {{ page }}
-            </button>
-            
-            <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="page-btn arrow-btn">
-              Siguiente →
-            </button>
+            <!-- End of catalog message -->
+            <div *ngIf="!showLoadMoreButton && visibleCount >= productos.length && productos.length > 0" class="end-catalog-msg animate-fade-in">
+              <span>Has visto todas las prendas</span>
+            </div>
           </div>
         </section>
       </div>
@@ -384,6 +386,25 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 32px;
     }
+    @media (max-width: 600px) {
+      .catalogo-container {
+        padding: 0 12px;
+        margin: 20px auto;
+      }
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .product-card {
+        gap: 10px;
+      }
+      .product-info h4 {
+        font-size: 13px;
+      }
+      .price {
+        font-size: 13px;
+      }
+    }
     .product-card {
       cursor: pointer;
       text-decoration: none;
@@ -468,42 +489,79 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
       border-radius: var(--radius-md);
       border: 1px dashed var(--border-color);
     }
-    .pagination {
+    .dynamic-pagination-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
       margin-top: 48px;
       padding-top: 24px;
       border-top: 1px solid var(--border-color);
+      width: 100%;
     }
-    .page-btn {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      color: var(--text-primary);
-      padding: 10px 16px;
-      border-radius: var(--radius-md);
+    .btn-ver-mas {
+      background: var(--primary-base, #1c1a17);
+      color: var(--bg-surface, #ffffff);
+      border: 1px solid var(--primary-base, #1c1a17);
+      padding: 14px 32px;
       font-family: var(--font-body);
       font-size: 14px;
       font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: var(--transition-fast);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
     }
-    .page-btn:hover:not(:disabled) {
-      border-color: var(--text-primary);
-      background: var(--bg-card);
+    .btn-ver-mas:hover {
+      background: var(--accent-base, #c5a880);
+      border-color: var(--accent-base, #c5a880);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(197, 168, 128, 0.2);
     }
-    .page-btn.active {
-      background: var(--primary-base);
-      color: var(--bg-surface);
-      border-color: var(--primary-base);
+    .btn-ver-mas:active {
+      transform: translateY(0);
     }
-    .page-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    .end-catalog-msg {
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 16px 0;
+      position: relative;
     }
-    .arrow-btn {
-      font-weight: 700;
+    .end-catalog-msg::before, .end-catalog-msg::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40px;
+      height: 1px;
+      background: var(--border-color);
+    }
+    .end-catalog-msg::before {
+      right: 100%;
+      margin-right: 16px;
+    }
+    .end-catalog-msg::after {
+      left: 100%;
+      margin-left: 16px;
+    }
+    .loading-more-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .mini-loader {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border-color);
+      border-radius: 50%;
+      border-top-color: var(--accent-base);
+      animation: spin 0.8s linear infinite;
     }
   `]
 })
@@ -516,21 +574,15 @@ export class CatalogoComponent implements OnInit {
   searchTerm: string = '';
   loading: boolean = true;
 
-  // Pagination
-  currentPage: number = 1;
+  // Dynamic Scroll Pagination
   pageSize: number = 6;
+  visibleCount: number = 6;
+  scrollLoadsCount: number = 0;
+  showLoadMoreButton: boolean = false;
+  loadingMore: boolean = false;
 
   get paginatedProductos(): Producto[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.productos.slice(startIndex, startIndex + this.pageSize);
-  }
-
-  get totalPages(): number {
-    return Math.ceil(this.productos.length / this.pageSize);
-  }
-
-  get pagesArray(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    return this.productos.slice(0, this.visibleCount);
   }
 
   constructor(
@@ -570,6 +622,7 @@ export class CatalogoComponent implements OnInit {
       next: (data) => {
         this.productos = data;
         this.loading = false;
+        this.resetPagination();
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -580,10 +633,16 @@ export class CatalogoComponent implements OnInit {
     });
   }
 
+  resetPagination(): void {
+    this.visibleCount = this.pageSize;
+    this.scrollLoadsCount = 0;
+    this.showLoadMoreButton = false;
+    this.loadingMore = false;
+  }
+
   selectCategory(categoryId: number | null): void {
     this.selectedCategory = categoryId;
     this.selectedSubcategory = null;
-    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
   }
 
@@ -596,7 +655,6 @@ export class CatalogoComponent implements OnInit {
         this.selectedCategory = sub.categoriaId;
       }
     }
-    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
   }
 
@@ -605,7 +663,6 @@ export class CatalogoComponent implements OnInit {
   }
 
   onFilterChange(): void {
-    this.currentPage = 1; // Reset to page 1
     this.loadProductos();
   }
 
@@ -616,20 +673,49 @@ export class CatalogoComponent implements OnInit {
     }
   }
 
-  setPage(page: number): void {
-    if (page < 1 || page > this.totalPages) return;
-    this.currentPage = page;
-    const element = document.querySelector('.layout');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    if (this.loading || this.loadingMore || this.showLoadMoreButton) {
+      return;
+    }
+
+    const threshold = 150;
+    const position = window.innerHeight + window.scrollY;
+    const height = document.documentElement.scrollHeight;
+
+    if (position >= height - threshold) {
+      this.loadMoreOnScroll();
     }
   }
 
-  nextPage(): void {
-    this.setPage(this.currentPage + 1);
+  loadMoreOnScroll(): void {
+    if (this.visibleCount >= this.productos.length) {
+      return;
+    }
+
+    if (this.scrollLoadsCount < 3) {
+      this.loadingMore = true;
+      this.cdr.markForCheck();
+      setTimeout(() => {
+        this.visibleCount += this.pageSize;
+        this.scrollLoadsCount++;
+        this.loadingMore = false;
+        this.cdr.markForCheck();
+      }, 400);
+    } else {
+      this.showLoadMoreButton = true;
+      this.cdr.markForCheck();
+    }
   }
 
-  prevPage(): void {
-    this.setPage(this.currentPage - 1);
+  loadMoreManually(): void {
+    this.loadingMore = true;
+    this.showLoadMoreButton = false;
+    this.cdr.markForCheck();
+    setTimeout(() => {
+      this.visibleCount += this.pageSize;
+      this.loadingMore = false;
+      this.cdr.markForCheck();
+    }, 400);
   }
 }

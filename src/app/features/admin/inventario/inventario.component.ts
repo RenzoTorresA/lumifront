@@ -109,18 +109,21 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                                 <tr *ngIf="productVariantsMap[p.id!].length === 0">
                                   <td colspan="6" class="empty-inline-row">No hay variantes creadas para este producto.</td>
                                 </tr>
-                                <tr *ngFor="let v of productVariantsMap[p.id!]">
+                                <tr *ngFor="let v of productVariantsMap[p.id!]" [class.deactivated-row]="v.estado === false">
                                   <td>
-                                    <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" [alt]="v.sku" class="variant-thumb" />
+                                    <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" [alt]="v.sku" class="variant-thumb" [class.dimmed]="v.estado === false" />
                                     <span *ngIf="!v.imagenUrl" class="no-img-text">-</span>
                                   </td>
-                                  <td><code class="sku-code">{{ v.sku }}</code></td>
-                                  <td><strong>{{ v.talla }}</strong></td>
-                                  <td>{{ v.color }}</td>
                                   <td>
+                                    <code class="sku-code" [class.dimmed]="v.estado === false">{{ v.sku }}</code>
+                                    <span *ngIf="v.estado === false" class="badge-deactivated" style="margin-left: 4px; font-size: 9px; padding: 1px 4px;">INACTIVO</span>
+                                  </td>
+                                  <td [class.dimmed]="v.estado === false"><strong>{{ v.talla }}</strong></td>
+                                  <td [class.dimmed]="v.estado === false">{{ v.color }}</td>
+                                  <td [class.dimmed]="v.estado === false">
                                     <span class="stock-badge">{{ v.stock }}</span>
                                   </td>
-                                  <td>
+                                  <td [class.dimmed]="v.estado === false">
                                     <span *ngIf="v.precio">S/ {{ v.precio | number:'1.2-2' }}</span>
                                     <span *ngIf="!v.precio" style="color: var(--admin-text-secondary); font-size: 11px;">(Base)</span>
                                   </td>
@@ -223,6 +226,7 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
           </div>
         </div>
       </main>
+    </div>
 
       <!-- ================= MODAL: CATEGORIA ================= -->
       <div class="modal-overlay" *ngIf="showCategoryModal">
@@ -378,26 +382,30 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                 </thead>
                 <tbody>
                   <tr *ngIf="variantes.length === 0">
-                    <td colspan="6" class="empty-row">No hay variantes creadas para este producto.</td>
+                    <td colspan="7" class="empty-row">No hay variantes creadas para este producto.</td>
                   </tr>
-                  <tr *ngFor="let v of variantes">
+                  <tr *ngFor="let v of variantes" [class.deactivated-row]="v.estado === false">
                     <td>
-                      <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" alt="Mini" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" />
+                      <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" alt="Mini" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" [class.dimmed]="v.estado === false" />
                       <span *ngIf="!v.imagenUrl" style="color: #6b7280;">-</span>
                     </td>
-                    <td>{{ v.sku }}</td>
-                    <td><strong>{{ v.talla }}</strong></td>
-                    <td>{{ v.color }}</td>
                     <td>
+                      <code class="sku-code" [class.dimmed]="v.estado === false">{{ v.sku }}</code>
+                      <span *ngIf="v.estado === false" class="badge-deactivated" style="margin-left: 4px; font-size: 9px; padding: 1px 4px;">INACTIVO</span>
+                    </td>
+                    <td [class.dimmed]="v.estado === false"><strong>{{ v.talla }}</strong></td>
+                    <td [class.dimmed]="v.estado === false">{{ v.color }}</td>
+                    <td [class.dimmed]="v.estado === false">
                       <span class="stock-badge">{{ v.stock }}</span>
                     </td>
-                    <td>
+                    <td [class.dimmed]="v.estado === false">
                       <span *ngIf="v.precio">S/ {{ v.precio | number:'1.2-2' }}</span>
                       <span *ngIf="!v.precio" style="color: var(--admin-text-secondary); font-size: 11px;">(Base)</span>
                     </td>
                     <td class="action-cells">
                       <button (click)="editVariant(v)" class="btn-edit btn-sm">Editar</button>
-                      <button (click)="deleteVariant(v.id!)" class="btn-delete btn-sm">Eliminar</button>
+                      <button *ngIf="v.estado !== false" (click)="deleteVariant(v.id!)" class="btn-delete btn-sm">Eliminar</button>
+                      <button *ngIf="v.estado === false" (click)="activateVariant(v)" class="btn-activate btn-sm">Activar</button>
                     </td>
                   </tr>
                 </tbody>
@@ -411,7 +419,6 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
         </div>
       </div>
 
-    </div>
   `,
   styles: [`
     .admin-layout {
@@ -623,7 +630,7 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
       align-items: flex-start;
       padding: 40px 16px;
       overflow-y: auto;
-      z-index: 300;
+      z-index: 9999;
     }
     .modal {
       background: var(--admin-bg-surface);
@@ -709,9 +716,14 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
     /* Variant layouts */
     .variant-management-layout {
       display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 20px;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
       align-items: start;
+    }
+    @media (max-width: 900px) {
+      .variant-management-layout {
+        grid-template-columns: 1fr;
+      }
     }
     .add-variant-form {
       background: var(--admin-bg-base);
@@ -1122,7 +1134,7 @@ export class InventarioComponent implements OnInit {
 
   loadVariantsForSelectedProduct(): void {
     if (!this.selectedProductForVariants?.id) return;
-    this.productoService.getVariantesByProductoId(this.selectedProductForVariants.id).subscribe({
+    this.productoService.getAdminVariantesByProductoId(this.selectedProductForVariants.id).subscribe({
       next: (vars) => {
         this.variantes = vars;
         this.productVariantsMap[this.selectedProductForVariants!.id!] = vars;
@@ -1143,7 +1155,7 @@ export class InventarioComponent implements OnInit {
 
   loadVariantsForProduct(productId: number): void {
     this.loadingVariants[productId] = true;
-    this.productoService.getVariantesByProductoId(productId).subscribe({
+    this.productoService.getAdminVariantesByProductoId(productId).subscribe({
       next: (vars) => {
         this.productVariantsMap[productId] = vars;
         this.loadingVariants[productId] = false;
@@ -1247,16 +1259,40 @@ export class InventarioComponent implements OnInit {
   }
 
   deleteVariant(id: number): void {
-    void showConfirmAlert('¿Estás seguro de eliminar esta variante?', 'Esta acción no se puede deshacer y afectará el stock.').then((result) => {
+    void showConfirmAlert(
+      '¿Estás seguro de desactivar esta variante?',
+      'Esta variante ya no aparecerá para los clientes en la tienda, pero seguirá existiendo en el historial y registros del administrador.'
+    ).then((result) => {
       if (result.isConfirmed) {
         this.productoService.deleteVariante(id).subscribe({
           next: () => {
-            void showSuccessAlert('Eliminada', 'La variante ha sido eliminada con éxito.');
+            void showSuccessAlert('Desactivada', 'La variante ha sido desactivada con éxito.');
             this.loadVariantsForSelectedProduct();
           },
           error: (err) => {
-            console.error('Error al eliminar variante', err);
-            void showErrorAlert('Error', 'No se pudo eliminar la variante.');
+            console.error('Error al desactivar variante', err);
+            void showErrorAlert('Error', 'No se pudo desactivar la variante.');
+          }
+        });
+      }
+    });
+  }
+
+  activateVariant(variant: VarianteProducto): void {
+    void showConfirmAlert(
+      '¿Estás seguro de activar esta variante?',
+      'El producto volverá a aparecer para los clientes en la tienda.'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        const updated = { ...variant, estado: true };
+        this.productoService.updateVariante(updated).subscribe({
+          next: () => {
+            void showSuccessAlert('Activada', 'La variante ha sido activada con éxito.');
+            this.loadVariantsForSelectedProduct();
+          },
+          error: (err) => {
+            console.error('Error al activar variante', err);
+            void showErrorAlert('Error', 'No se pudo activar la variante.');
           }
         });
       }

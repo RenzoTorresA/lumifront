@@ -39,6 +39,7 @@ export interface VarianteProducto {
   sku: string;
   imagenUrl?: string;
   precio?: number;
+  estado?: boolean;
 }
 
 @Injectable({
@@ -79,6 +80,10 @@ export class ProductoService {
 
   getVariantesByProductoId(id: number): Observable<VarianteProducto[]> {
     return this.http.get<VarianteProducto[]>(`${this.publicUrl}/productos/${id}/variantes`);
+  }
+
+  getAdminVariantesByProductoId(id: number): Observable<VarianteProducto[]> {
+    return this.http.get<VarianteProducto[]>(`${this.adminUrl}/productos/${id}/variantes`);
   }
 
   // Admin Categories
