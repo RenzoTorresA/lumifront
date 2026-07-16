@@ -679,7 +679,7 @@ export class CatalogoComponent implements OnInit {
       return;
     }
 
-    const threshold = 150;
+    const threshold = 700;
     const position = window.innerHeight + window.scrollY;
     const height = document.documentElement.scrollHeight;
 
