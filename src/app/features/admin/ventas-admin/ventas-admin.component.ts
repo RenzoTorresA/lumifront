@@ -535,7 +535,7 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert } 
           </ng-container>
 
           <ng-template #salesTableView>
-            <div class="table-toolbar" style="gap: 16px; align-items: center;">
+            <div class="table-toolbar">
               <div class="search-box table-search-box">
                 <input
                   type="text"
@@ -835,10 +835,11 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert } 
     }
     .filters-bar {
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      justify-content: flex-start;
       align-items: center;
       margin-bottom: 24px;
-      gap: 20px;
+      gap: 16px;
     }
     .view-tabs {
       display: inline-flex;
@@ -1254,7 +1255,10 @@ import { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert } 
     }
     .table-toolbar {
       display: flex;
-      justify-content: flex-end;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 16px;
       margin-bottom: 20px;
     }
     .table-search-box {
