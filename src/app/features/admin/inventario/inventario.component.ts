@@ -56,7 +56,7 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                   <ng-container *ngFor="let p of productos">
                     <tr [class.deactivated-row]="p.estado === false">
                       <td>
-                        <img [src]="p.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&auto=format&fit=crop'" [alt]="p.nombre" class="thumb" [class.dimmed]="p.estado === false" />
+                        <img [src]="getImageUrl(p.imagenGeneralUrl)" [alt]="p.nombre" class="thumb" [class.dimmed]="p.estado === false" />
                       </td>
                       <td>
                         <strong [class.dimmed]="p.estado === false">{{ p.nombre }}</strong>
@@ -111,7 +111,7 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                                 </tr>
                                 <tr *ngFor="let v of productVariantsMap[p.id!]" [class.deactivated-row]="v.estado === false">
                                   <td>
-                                    <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" [alt]="v.sku" class="variant-thumb" [class.dimmed]="v.estado === false" />
+                                    <img *ngIf="v.imagenUrl" [src]="getImageUrl(v.imagenUrl)" [alt]="v.sku" class="variant-thumb" [class.dimmed]="v.estado === false" />
                                     <span *ngIf="!v.imagenUrl" class="no-img-text">-</span>
                                   </td>
                                   <td>
@@ -310,10 +310,31 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
               <label>Precio Base (S/)</label>
               <input type="number" [(ngModel)]="productForm.precioBase" name="prodPrecio" required step="0.01" />
             </div>
-            <div class="form-group">
-              <label>URL de Imagen</label>
-              <input type="text" [(ngModel)]="productForm.imagenGeneralUrl" name="prodImg" placeholder="https://ejemplo.com/imagen.jpg" />
-            </div>
+             <div class="form-group">
+               <label>Imagen del Producto</label>
+               <div class="image-toggle-buttons" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                 <button type="button" [class.active]="productImageMode === 'url'" (click)="productImageMode = 'url'" class="btn-toggle-mode">URL de Imagen</button>
+                 <button type="button" [class.active]="productImageMode === 'file'" (click)="productImageMode = 'file'" class="btn-toggle-mode">Subir Archivo</button>
+               </div>
+               
+               <div *ngIf="productImageMode === 'url'">
+                 <input type="text" [(ngModel)]="productForm.imagenGeneralUrl" name="prodImg" placeholder="https://ejemplo.com/imagen.jpg" />
+               </div>
+               
+               <div *ngIf="productImageMode === 'file'" class="file-upload-wrapper">
+                 <div class="file-input-container" style="display: flex; align-items: center; gap: 12px;">
+                   <input type="file" (change)="onProductFileSelected($event)" accept="image/*" class="file-input-hidden" id="productImgFile" style="display: none;" />
+                   <label for="productImgFile" class="btn-select-file" style="background: var(--admin-bg-base); border: 1px solid var(--admin-border-color); padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; font-size: 13px;">
+                     Seleccionar Imagen
+                   </label>
+                   <span *ngIf="uploadingProductImg" class="uploading-text" style="color: var(--admin-accent); font-size: 13px; font-weight: 600;">Subiendo...</span>
+                   <span *ngIf="!uploadingProductImg && productForm.imagenGeneralUrl" class="uploading-text" style="color: #10b981; font-size: 13px; font-weight: 600;">✓ Subido</span>
+                 </div>
+                 <div class="img-preview-container" style="margin-top: 12px;" *ngIf="productForm.imagenGeneralUrl">
+                   <img [src]="getImageUrl(productForm.imagenGeneralUrl)" alt="Vista previa" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--admin-border-color); object-fit: cover;" />
+                 </div>
+               </div>
+             </div>
             <div class="form-group">
               <label>Descripción</label>
               <textarea [(ngModel)]="productForm.descripcion" name="prodDesc" rows="3"></textarea>
@@ -351,10 +372,31 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                 <label>SKU</label>
                 <input type="text" [(ngModel)]="variantForm.sku" name="vSku" required placeholder="Ej: PROD-BLK-S" />
               </div>
-              <div class="form-group">
-                <label>URL de Imagen (Opcional)</label>
-                <input type="text" [(ngModel)]="variantForm.imagenUrl" name="vImagenUrl" placeholder="https://ejemplo.com/imagen.jpg" />
-              </div>
+               <div class="form-group">
+                 <label>Imagen de Variante (Opcional)</label>
+                 <div class="image-toggle-buttons" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                   <button type="button" [class.active]="variantImageMode === 'url'" (click)="variantImageMode = 'url'" class="btn-toggle-mode">URL de Imagen</button>
+                   <button type="button" [class.active]="variantImageMode === 'file'" (click)="variantImageMode = 'file'" class="btn-toggle-mode">Subir Archivo</button>
+                 </div>
+                 
+                 <div *ngIf="variantImageMode === 'url'">
+                   <input type="text" [(ngModel)]="variantForm.imagenUrl" name="vImagenUrl" placeholder="https://ejemplo.com/imagen.jpg" />
+                 </div>
+                 
+                 <div *ngIf="variantImageMode === 'file'" class="file-upload-wrapper">
+                   <div class="file-input-container" style="display: flex; align-items: center; gap: 12px;">
+                     <input type="file" (change)="onVariantFileSelected($event)" accept="image/*" class="file-input-hidden" id="variantImgFile" style="display: none;" />
+                     <label for="variantImgFile" class="btn-select-file" style="background: var(--admin-bg-base); border: 1px solid var(--admin-border-color); padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; font-size: 13px;">
+                       Seleccionar Imagen
+                     </label>
+                     <span *ngIf="uploadingVariantImg" class="uploading-text" style="color: var(--admin-accent); font-size: 13px; font-weight: 600;">Subiendo...</span>
+                     <span *ngIf="!uploadingVariantImg && variantForm.imagenUrl" class="uploading-text" style="color: #10b981; font-size: 13px; font-weight: 600;">✓ Subido</span>
+                   </div>
+                   <div class="img-preview-container" style="margin-top: 12px;" *ngIf="variantForm.imagenUrl">
+                     <img [src]="getImageUrl(variantForm.imagenUrl)" alt="Vista previa" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--admin-border-color); object-fit: cover;" />
+                   </div>
+                 </div>
+               </div>
               <div class="form-group">
                 <label>Precio Especial (Opcional) (S/)</label>
                 <input type="number" step="0.01" [(ngModel)]="variantForm.precio" name="vPrecio" placeholder="Por defecto: Precio base" />
@@ -385,10 +427,10 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
                     <td colspan="7" class="empty-row">No hay variantes creadas para este producto.</td>
                   </tr>
                   <tr *ngFor="let v of variantes" [class.deactivated-row]="v.estado === false">
-                    <td>
-                      <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" alt="Mini" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" [class.dimmed]="v.estado === false" />
-                      <span *ngIf="!v.imagenUrl" style="color: #6b7280;">-</span>
-                    </td>
+                     <td>
+                       <img *ngIf="v.imagenUrl" [src]="getImageUrl(v.imagenUrl)" alt="Mini" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" [class.dimmed]="v.estado === false" />
+                       <span *ngIf="!v.imagenUrl" style="color: #6b7280;">-</span>
+                     </td>
                     <td>
                       <code class="sku-code" [class.dimmed]="v.estado === false">{{ v.sku }}</code>
                       <span *ngIf="v.estado === false" class="badge-deactivated" style="margin-left: 4px; font-size: 9px; padding: 1px 4px;">INACTIVO</span>
@@ -891,6 +933,23 @@ import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../sha
       text-align: center;
       min-width: 48px;
     }
+    .btn-toggle-mode {
+      background: var(--admin-bg-base);
+      color: var(--admin-text-secondary);
+      border: 1px solid var(--admin-border-color);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      outline: none;
+    }
+    .btn-toggle-mode:hover, .btn-toggle-mode.active {
+      background: var(--admin-bg-surface);
+      color: var(--admin-text-primary);
+      border-color: var(--admin-text-primary);
+    }
   `]
 })
 export class InventarioComponent implements OnInit {
@@ -927,6 +986,11 @@ export class InventarioComponent implements OnInit {
   editingProduct: Producto | null = null;
   selectedProductForVariants: Producto | null = null;
   editingVariant: VarianteProducto | null = null;
+
+  productImageMode: 'url' | 'file' = 'url';
+  variantImageMode: 'url' | 'file' = 'url';
+  uploadingProductImg = false;
+  uploadingVariantImg = false;
 
   constructor(private productoService: ProductoService, private cdr: ChangeDetectorRef) {}
 
@@ -1056,10 +1120,13 @@ export class InventarioComponent implements OnInit {
         precioBase: prod.precioBase,
         imagenGeneralUrl: prod.imagenGeneralUrl || ''
       };
+      this.productImageMode = 'url';
     } else {
       this.editingProduct = null;
       this.productForm = { id: undefined, categoriaId: this.categorias[0]?.id || 0, subcategoriaId: null, nombre: '', descripcion: '', precioBase: 0, imagenGeneralUrl: '' };
+      this.productImageMode = 'url';
     }
+    this.uploadingProductImg = false;
     this.showProductModal = true;
   }
 
@@ -1128,6 +1195,8 @@ export class InventarioComponent implements OnInit {
     this.selectedProductForVariants = prod;
     this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
     this.editingVariant = null;
+    this.variantImageMode = 'url';
+    this.uploadingVariantImg = false;
     this.loadVariantsForSelectedProduct();
     this.showVariantsModal = true;
   }
@@ -1183,6 +1252,8 @@ export class InventarioComponent implements OnInit {
     this.showVariantsModal = false;
     this.editingVariant = null;
     this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
+    this.variantImageMode = 'url';
+    this.uploadingVariantImg = false;
   }
 
   editVariant(v: VarianteProducto): void {
@@ -1195,12 +1266,16 @@ export class InventarioComponent implements OnInit {
       imagenUrl: v.imagenUrl || '',
       precio: v.precio || null
     };
+    this.variantImageMode = 'url';
+    this.uploadingVariantImg = false;
     this.cdr.markForCheck();
   }
 
   cancelEditVariant(): void {
     this.editingVariant = null;
     this.variantForm = { talla: '', color: '', stock: 0, sku: '', imagenUrl: '', precio: null };
+    this.variantImageMode = 'url';
+    this.uploadingVariantImg = false;
     this.cdr.markForCheck();
   }
 
@@ -1378,5 +1453,49 @@ export class InventarioComponent implements OnInit {
         });
       }
     });
+  }
+
+  onProductFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    this.uploadingProductImg = true;
+    this.productoService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.productForm.imagenGeneralUrl = res.url;
+        this.uploadingProductImg = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al subir imagen de producto', err);
+        this.uploadingProductImg = false;
+        void showErrorAlert('Error', 'No se pudo subir la imagen.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onVariantFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    this.uploadingVariantImg = true;
+    this.productoService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.variantForm.imagenUrl = res.url;
+        this.uploadingVariantImg = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al subir imagen de variante', err);
+        this.uploadingVariantImg = false;
+        void showErrorAlert('Error', 'No se pudo subir la imagen.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  getImageUrl(url: string | null | undefined): string {
+    return this.productoService.getImageUrl(url);
   }
 }

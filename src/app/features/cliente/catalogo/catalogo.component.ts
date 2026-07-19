@@ -110,7 +110,7 @@ import { ProductoService, Producto, Categoria, Subcategoria } from '../../../cor
           <div *ngIf="!loading" class="products-grid">
             <article *ngFor="let prod of paginatedProductos" class="product-card" [routerLink]="['/producto', prod.id]">
               <div class="img-wrapper">
-                <img [src]="prod.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'" [alt]="prod.nombre" />
+                <img [src]="getImageUrl(prod.imagenGeneralUrl)" [alt]="prod.nombre" />
                 <span class="view-overlay">Ver Detalle</span>
               </div>
               <div class="product-info">
@@ -593,6 +593,10 @@ export class CatalogoComponent implements OnInit {
   ngOnInit(): void {
     this.loadCategorias();
     this.loadProductos();
+  }
+
+  getImageUrl(url: string | null | undefined): string {
+    return this.productoService.getImageUrl(url);
   }
 
   loadCategorias(): void {
