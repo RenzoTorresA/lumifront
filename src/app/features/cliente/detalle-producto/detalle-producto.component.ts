@@ -447,10 +447,10 @@ export class DetalleProductoComponent implements OnInit {
     if (this.selectedColor) {
       const variantWithImage = this.variantes.find(v => v.color === this.selectedColor && v.imagenUrl);
       if (variantWithImage && variantWithImage.imagenUrl) {
-        return variantWithImage.imagenUrl;
+        return this.productoService.getImageUrl(variantWithImage.imagenUrl);
       }
     }
-    return this.producto?.imagenGeneralUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+    return this.productoService.getImageUrl(this.producto?.imagenGeneralUrl);
   }
 
   isSizeAvailableForSelectedColor(size: string): boolean {

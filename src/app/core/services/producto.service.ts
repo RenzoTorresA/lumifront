@@ -167,4 +167,23 @@ export class ProductoService {
   deleteVariante(id: number): Observable<void> {
     return this.http.delete<void>(`${this.adminUrl}/productos/variantes/${id}`);
   }
+
+  // Image Upload and Helpers
+  uploadImage(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${this.adminUrl}/productos/upload`, formData);
+  }
+
+  getImageUrl(url: string | null | undefined): string {
+    if (!url) {
+      return 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const baseUrl = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${baseUrl}${cleanUrl}`;
+  }
 }
